@@ -19,5 +19,5 @@ export const createCacheKey = (query: Record<string, unknown>): string => {
     const hash = crypto.createHash('sha256').update(queryString).digest('hex');
 
     // 4. Return the final key with a prefix
-    return `podcasts:query:${hash}`;
+    return hash;
 };

@@ -17,10 +17,11 @@ const productBookmarkAddDelete = catchAsync(async (req, res) => {
         data: result,
     });
 });
-// get my bookmark
+// get my bookmark---------
 const getMyBookmark = catchAsync(async (req, res) => {
     const result = await BookmarkService.getMyBookmarkFromDB(
-        req?.user?.profileId
+        req?.user?.profileId,
+        req.query
     );
 
     sendResponse(res, {

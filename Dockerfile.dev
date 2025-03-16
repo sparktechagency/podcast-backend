@@ -1,0 +1,15 @@
+# Dockerfile.dev (for development)
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci  # installs devDependencies too
+
+COPY tsconfig.json ./
+COPY src ./src
+
+EXPOSE 5090
+
+CMD ["npm", "run", "start:dev"]

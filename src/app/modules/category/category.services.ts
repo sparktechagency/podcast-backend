@@ -4,6 +4,7 @@ import AppError from '../../error/appError';
 import { ICategory } from './category.interface';
 import Category from './category.model';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import redis from '../../utilities/redisClient';
 
 // create category into db
 const createCategoryIntoDB = async (payload: ICategory) => {
@@ -49,16 +50,20 @@ const updateCategoryIntoDB = async (
 //         result,
 //     };
 // };
-const getAllCategories = async(query:Record<string,unknown>)=>{
-     const page = parseInt(query.page as string) || 1;
+const getAllCategories = async (query: Record<string, unknown>) => {
+    const page = parseInt(query.page as string) || 1;
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
-
-    const matchConditions : any = {
-        isDeleted:false
+    const cacheKey = `categories:page=${page}:limit=${limit}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        return JSON.parse(cached);
     }
+    const matchConditions: any = {
+        isDeleted: false,
+    };
 
-const data = await Category.aggregate([
+    const data = await Category.aggregate([
         {
             $match: matchConditions,
         },
@@ -105,7 +110,7 @@ const data = await Category.aggregate([
     const total = data[0]?.totalCount[0]?.total || 0;
     const totalPage = Math.ceil(total / limit);
 
-    return {
+    const response = {
         meta: {
             page,
             limit,
@@ -115,7 +120,11 @@ const data = await Category.aggregate([
         result,
     };
 
-}
+    // 2. Cache the result for 1 hour (3600 seconds)
+    await redis.set(cacheKey, JSON.stringify(response), 'EX', 3600);
+
+    return response;
+};
 
 const getSingleCategory = async (id: string) => {
     const category = await Category.findById(id);
