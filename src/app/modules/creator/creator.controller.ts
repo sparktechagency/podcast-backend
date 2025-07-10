@@ -1,24 +1,53 @@
-import httpStatus from "http-status";
-import catchAsync from "../../utilities/catchasync";
-import sendResponse from "../../utilities/sendResponse";
-import creatorServices from "./creator.service";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import httpStatus from 'http-status';
+import catchAsync from '../../utilities/catchasync';
+import sendResponse from '../../utilities/sendResponse';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
+import CreatorService from './creator.service';
 
-const updateUserProfile = catchAsync(async (req, res) => {
-    const { files } = req;
-    if (files && typeof files === "object" && "profile_image" in files) {
-        req.body.profile_image = files["profile_image"][0].path;
+const updateCreatorProfile = catchAsync(async (req, res) => {
+    const file: any = req.files?.profile_image;
+    if (file) {
+        req.body.profile_image = getCloudFrontUrl(file[0].key);
     }
-    const result = await creatorServices.updateUserProfile(
-        req.user.profileId,
+
+    const result = await CreatorService.updateCreatorProfile(
+        req?.user?.profileId,
         req.body
     );
+
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: "Profile updated successfully",
+        message: 'Creator profile updated successfully',
         data: result,
     });
 });
 
-const CreatorController = { updateUserProfile };
+const getAllCreators = catchAsync(async (req, res) => {
+    const result = await CreatorService.getAllCreators(req.query);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Creators retrieved successfully',
+        data: result,
+    });
+});
+
+const getSingleCreator = catchAsync(async (req, res) => {
+    const result = await CreatorService.getSingleCreator(req.params.id);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Creator retrieved successfully',
+        data: result,
+    });
+});
+
+const CreatorController = {
+    updateCreatorProfile,
+    getAllCreators,
+    getSingleCreator,
+};
+
 export default CreatorController;
