@@ -6,9 +6,9 @@ import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import subCategoryService from './subCategory.service';
 
 const createSubCategory = catchAsync(async (req, res) => {
-    const file: any = req.files?.category_image;
+    const file: any = req.files?.sub_category_image;
     if (file) {
-        req.body.category_image = getCloudFrontUrl(file[0].key);
+        req.body.image = getCloudFrontUrl(file[0].key);
     }
 
     const result = await subCategoryService.createSubCategoryIntoDB(req.body);
@@ -22,9 +22,9 @@ const createSubCategory = catchAsync(async (req, res) => {
 });
 
 const updateSubCategory = catchAsync(async (req, res) => {
-    const file: any = req.files?.category_image;
+    const file: any = req.files?.sub_category_image;
     if (file) {
-        req.body.category_image = getCloudFrontUrl(file[0].key);
+        req.body.image = getCloudFrontUrl(file[0].key);
     }
 
     const result = await subCategoryService.updateSubCategoryIntoDB(

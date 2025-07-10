@@ -24,8 +24,8 @@ const updateSubCategoryIntoDB = async (
         runValidators: true,
     });
 
-    if (payload.category_image && subCategory.category_image) {
-        deleteFileFromS3(subCategory.category_image);
+    if (payload.image && subCategory.image) {
+        deleteFileFromS3(subCategory.image);
     }
 
     return result;

@@ -17,6 +17,7 @@ declare namespace Express {
             category_image?: File[];
             hotel_image?: File[];
             pictures?: File[];
+            sub_category_image?: File[];
         };
     }
 }
