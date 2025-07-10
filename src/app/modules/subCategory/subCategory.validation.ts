@@ -1,12 +1,25 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const updateSubCategoryData = z.object({
+const createSubCategoryValidationSchema = z.object({
     body: z.object({
-        name: z.string().optional(),
-        phone: z.string().optional(),
-        address: z.string().optional(),
+        category: z.string({ required_error: 'Parent category is required' }),
+        name: z
+            .string({ required_error: 'Subcategory name is required' })
+            .min(1),
     }),
 });
 
-const SubCategoryValidations = { updateSubCategoryData };
-export default SubCategoryValidations;
+const updateSubCategoryValidationSchema = z.object({
+    body: z.object({
+        category: z.string().optional(),
+        name: z.string().min(1).optional(),
+        category_image: z.string().optional(),
+    }),
+});
+
+const subCategoryValidation = {
+    createSubCategoryValidationSchema,
+    updateSubCategoryValidationSchema,
+};
+
+export default subCategoryValidation;
