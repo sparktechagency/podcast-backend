@@ -3,7 +3,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import express, { Application, Request, Response, application } from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
@@ -12,6 +12,12 @@ import notFound from './app/middlewares/notFound';
 const app: Application = express();
 import sendContactUsEmail from './app/helper/sendContactUsEmail';
 import dotenv from 'dotenv';
+import AppError from './app/error/appError';
+import httpStatus from 'http-status';
+import {
+    generateMultiplePresignedUrls,
+    generatePresignedUrl,
+} from './app/helper/presignedUrlGenerator';
 dotenv.config();
 
 // parser
@@ -45,6 +51,37 @@ app.post('/contact-us', sendContactUsEmail);
 
 app.get('/', async (req, res) => {
     res.send({ message: 'Welcome to podcast server' });
+});
+
+// for s3 bucket--------------
+app.post('/generate-presigned-url', async (req, res) => {
+    const { fileType, fileCategory } = req.body;
+    if (!fileType || !fileCategory) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'File type and file category is required'
+        );
+    }
+
+    try {
+        const result = await generatePresignedUrl({ fileType, fileCategory });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating pre-signed URL' });
+    }
+});
+
+app.post('/generate-multiple-presigned-urls', async (req, res) => {
+    const { files } = req.body;
+
+    try {
+        const result = await generateMultiplePresignedUrls(files);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error generating multiple pre-signed URLs',
+        });
+    }
 });
 
 // global error handler
