@@ -8,25 +8,25 @@ import podcastController from './podcast.controller';
 const router = express.Router();
 
 router.post(
-  '/create-podcast',
-  auth(USER_ROLE.user),
-  validateRequest(podcastValidation.createPodcastValidationSchema),
-  podcastController.createPodcast,
+    '/create-podcast',
+    auth(USER_ROLE.creator),
+    validateRequest(podcastValidation.createPodcastValidationSchema),
+    podcastController.createPodcast
 );
 
 router.patch(
-  '/update-podcast/:id',
-  auth(USER_ROLE.user),
-  validateRequest(podcastValidation.updatePodcastValidationSchema),
-  podcastController.updatePodcast,
+    '/update-podcast/:id',
+    auth(USER_ROLE.creator),
+    validateRequest(podcastValidation.updatePodcastValidationSchema),
+    podcastController.updatePodcast
 );
 
 router.get('/all-podcasts', podcastController.getAllPodcasts);
 router.get('/get-single-podcast/:id', podcastController.getSinglePodcast);
 router.delete(
-  '/delete-podcast/:id',
-  auth(USER_ROLE.user),
-  podcastController.deletePodcast,
+    '/delete-podcast/:id',
+    auth(USER_ROLE.creator),
+    podcastController.deletePodcast
 );
 
 export const podcastRoutes = router;
