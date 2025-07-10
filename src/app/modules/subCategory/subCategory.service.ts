@@ -1,21 +1,78 @@
-import httpStatus from "http-status";
-import AppError from "../../error/appError";
-import { ISubCategory } from "./subCategory.interface";
-import subCategoryModel from "./subCategory.model";
+import httpStatus from 'http-status';
+import AppError from '../../error/appError';
+import { ISubCategory } from './subCategory.interface';
+import SubCategory from './subCategory.model';
+import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import QueryBuilder from '../../builder/QueryBuilder';
 
-const updateUserProfile = async (id: string, payload: Partial<ISubCategory>) => {
-    if (payload.email || payload.username) {
-        throw new AppError(httpStatus.BAD_REQUEST, "You cannot change the email or username");
+const createSubCategoryIntoDB = async (payload: ISubCategory) => {
+    const result = await SubCategory.create(payload);
+    return result;
+};
+
+const updateSubCategoryIntoDB = async (
+    id: string,
+    payload: Partial<ISubCategory>
+) => {
+    const subCategory = await SubCategory.findOne({ _id: id });
+    if (!subCategory) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Subcategory not found');
     }
-    const user = await subCategoryModel.findById(id);
-    if (!user) {
-        throw new AppError(httpStatus.NOT_FOUND, "Profile not found");
-    }
-    return await subCategoryModel.findByIdAndUpdate(id, payload, {
+
+    const result = await SubCategory.findByIdAndUpdate(id, payload, {
         new: true,
         runValidators: true,
     });
+
+    if (payload.category_image && subCategory.category_image) {
+        deleteFileFromS3(subCategory.category_image);
+    }
+
+    return result;
 };
 
-const SubCategoryServices = { updateUserProfile };
-export default SubCategoryServices;
+const getAllSubCategories = async (query: Record<string, unknown>) => {
+    const resultQuery = new QueryBuilder(
+        SubCategory.find({ isDeleted: false }),
+        query
+    )
+        .search(['name'])
+        .fields()
+        .filter()
+        .paginate()
+        .sort();
+
+    const result = await resultQuery.modelQuery;
+    const meta = await resultQuery.countTotal();
+
+    return { meta, result };
+};
+
+const getSingleSubCategory = async (id: string) => {
+    const subCategory = await SubCategory.findById(id);
+    if (!subCategory) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Subcategory not found');
+    }
+
+    return subCategory;
+};
+
+const deleteSubCategoryFromDB = async (id: string) => {
+    const subCategory = await SubCategory.findById(id);
+    if (!subCategory) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Subcategory not found');
+    }
+
+    const result = await SubCategory.findByIdAndUpdate(id, { isDeleted: true });
+    return result;
+};
+
+const subCategoryService = {
+    createSubCategoryIntoDB,
+    updateSubCategoryIntoDB,
+    getAllSubCategories,
+    getSingleSubCategory,
+    deleteSubCategoryFromDB,
+};
+
+export default subCategoryService;
