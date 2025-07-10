@@ -1,21 +1,53 @@
-import httpStatus from "http-status";
-import AppError from "../../error/appError";
-import { ICreator } from "./creator.interface";
-import creatorModel from "./creator.model";
+import httpStatus from 'http-status';
+import AppError from '../../error/appError';
+import { ICreator } from './creator.interface';
+import Creator from './creator.model';
+import QueryBuilder from '../../builder/QueryBuilder';
 
-const updateUserProfile = async (id: string, payload: Partial<ICreator>) => {
-    if (payload.email || payload.username) {
-        throw new AppError(httpStatus.BAD_REQUEST, "You cannot change the email or username");
+const updateCreatorProfile = async (id: string, payload: Partial<ICreator>) => {
+    const creator = await Creator.findById(id);
+    if (!creator) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Creator profile not found');
     }
-    const user = await creatorModel.findById(id);
-    if (!user) {
-        throw new AppError(httpStatus.NOT_FOUND, "Profile not found");
-    }
-    return await creatorModel.findByIdAndUpdate(id, payload, {
+
+    const result = await Creator.findByIdAndUpdate(id, payload, {
         new: true,
         runValidators: true,
     });
+
+    return result;
 };
 
-const CreatorServices = { updateUserProfile };
-export default CreatorServices;
+const getSingleCreator = async (id: string) => {
+    const creator = await Creator.findById(id);
+    if (!creator) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Creator not found');
+    }
+
+    return creator;
+};
+
+const getAllCreators = async (query: Record<string, unknown>) => {
+    const resultQuery = new QueryBuilder(Creator.find(), query)
+        .search(['name', 'email'])
+        .fields()
+        .filter()
+        .paginate()
+        .sort();
+
+    const result = await resultQuery.modelQuery;
+    const meta = await resultQuery.countTotal();
+
+    return {
+        meta,
+        result,
+    };
+};
+
+const CreatorService = {
+    updateCreatorProfile,
+    getSingleCreator,
+    getAllCreators,
+};
+
+export default CreatorService;
