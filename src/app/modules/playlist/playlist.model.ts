@@ -5,8 +5,13 @@ const podcastPlaylistSchema = new Schema<IPodcastPlaylist>(
     {
         user: {
             type: Schema.Types.ObjectId,
-            ref: 'NormalUser',
             required: true,
+            refPath: 'userType',
+        },
+        userType: {
+            type: String,
+            required: true,
+            enum: ['NormalUser', 'Creator'],
         },
         name: { type: String, required: true, trim: true },
         description: { type: String, required: true, trim: true },
