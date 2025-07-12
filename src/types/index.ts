@@ -19,6 +19,7 @@ declare namespace Express {
             pictures?: File[];
             sub_category_image?: File[];
             playlist_cover?: File[];
+            album_cover?: File[];
         };
     }
 }
