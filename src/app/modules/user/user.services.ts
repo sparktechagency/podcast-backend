@@ -20,12 +20,14 @@ import registrationSuccessEmailBody from '../../mailTemplate/registerSucessEmail
 import { createToken } from './user.utils';
 import config from '../../config';
 dotenv.config();
-
 const generateVerifyCode = (): number => {
     return Math.floor(100000 + Math.random() * 900000);
 };
 const registerUser = async (
-    payload: INormalUser & { password: string; confirmPassword: string }
+    payload: INormalUser & {
+        password: string;
+        confirmPassword: string;
+    }
 ) => {
     const { password, confirmPassword, ...userData } = payload;
     if (password !== confirmPassword) {
@@ -47,7 +49,7 @@ const registerUser = async (
         const userDataPayload: Partial<TUser> = {
             email: userData?.email,
             password: password,
-            role: USER_ROLE.user,
+            role: payload.role,
             verifyCode,
             codeExpireIn: new Date(Date.now() + 5 * 60000),
         };

@@ -9,7 +9,7 @@ export interface TUser {
     phone: string;
     password: string;
     passwordChangedAt?: Date;
-    role: 'user' | 'superAdmin' | 'admin';
+    role: 'user' | 'creator' | 'superAdmin' | 'admin';
     isBlocked: boolean;
     verifyCode: number;
     resetCode: number;

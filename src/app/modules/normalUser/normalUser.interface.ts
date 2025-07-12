@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
+import { USER_ROLE } from '../user/user.constant';
 
 export interface INormalUser {
     user: Types.ObjectId;
@@ -11,4 +12,5 @@ export interface INormalUser {
         type: 'Point';
         coordinates: [number, number];
     };
+    role: (typeof USER_ROLE)[keyof typeof USER_ROLE];
 }
