@@ -8,6 +8,9 @@ import { bannerRoutes } from '../modules/banner/banner.routes';
 import { metaRoutes } from '../modules/meta/meta.routes';
 import { feedbackRoutes } from '../modules/feedback/feedback.routes';
 import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
+import { podcastRoutes } from '../modules/podcast/podcast.routes';
+import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
+import { albumRoutes } from '../modules/album/album.routes';
 
 const router = Router();
 
@@ -49,6 +52,18 @@ const moduleRoutes = [
     {
         path: '/super-admin',
         router: superAdminRoutes,
+    },
+    {
+        path: '/podcast',
+        router: podcastRoutes,
+    },
+    {
+        path: '/playlist',
+        router: podcastPlaylistRoutes,
+    },
+    {
+        path: '/album',
+        router: albumRoutes,
     },
 ];
 
