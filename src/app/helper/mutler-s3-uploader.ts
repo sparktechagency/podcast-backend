@@ -40,6 +40,7 @@ export const uploadFile = () => {
             'pictures',
             'banner',
             'hotel_image',
+            'sub_category_image',
         ];
 
         if (file.fieldname === undefined) {
@@ -97,8 +98,8 @@ export const uploadFile = () => {
                 uploadPath = 'uploads/images/banner_image';
             } else if (file.fieldname === 'team_bg_image') {
                 uploadPath = 'uploads/images/team_bg_image';
-            } else if (file.fieldname === 'player_image') {
-                uploadPath = 'uploads/images/player_image';
+            } else if (file.fieldname === 'sub_category_image') {
+                uploadPath = 'uploads/images/sub_category_image';
             } else if (file.fieldname === 'pictures') {
                 uploadPath = 'uploads/images/pictures';
             } else if (file.fieldname === 'hotel_image') {
@@ -147,6 +148,7 @@ export const uploadFile = () => {
         { name: 'chat_videos', maxCount: 2 },
         { name: 'chat_images', maxCount: 7 },
         { name: 'hotel_image', maxCount: 1 },
+        { name: 'sub_category_image', maxCount: 1 },
     ]);
 
     return upload;

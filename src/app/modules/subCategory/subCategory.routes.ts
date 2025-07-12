@@ -9,7 +9,7 @@ import { uploadFile } from '../../helper/mutler-s3-uploader';
 const router = express.Router();
 
 router.post(
-    '/create-subcategory',
+    '/create',
     auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
@@ -23,7 +23,7 @@ router.post(
 );
 
 router.patch(
-    '/update-subcategory/:id',
+    '/update/:id',
     auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
@@ -37,12 +37,9 @@ router.patch(
 );
 
 router.get('/all-subcategories', subCategoryController.getAllSubCategories);
-router.get(
-    '/get-single-subcategory/:id',
-    subCategoryController.getSingleSubCategory
-);
+router.get('/get-single/:id', subCategoryController.getSingleSubCategory);
 router.delete(
-    '/delete-subcategory/:id',
+    '/delete/:id',
     auth(USER_ROLE.superAdmin),
     subCategoryController.deleteSubCategory
 );

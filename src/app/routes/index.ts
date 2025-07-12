@@ -11,6 +11,8 @@ import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
 import { podcastRoutes } from '../modules/podcast/podcast.routes';
 import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
 import { albumRoutes } from '../modules/album/album.routes';
+import { categoryRoutes } from '../modules/category/category.routes';
+import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 
 const router = Router();
 
@@ -64,6 +66,14 @@ const moduleRoutes = [
     {
         path: '/album',
         router: albumRoutes,
+    },
+    {
+        path: '/category',
+        router: categoryRoutes,
+    },
+    {
+        path: '/sub-category',
+        router: subCategoryRoutes,
     },
 ];
 

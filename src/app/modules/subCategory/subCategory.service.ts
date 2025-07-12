@@ -33,7 +33,10 @@ const updateSubCategoryIntoDB = async (
 
 const getAllSubCategories = async (query: Record<string, unknown>) => {
     const resultQuery = new QueryBuilder(
-        SubCategory.find({ isDeleted: false }),
+        SubCategory.find({ isDeleted: false }).populate({
+            path: 'category',
+            select: 'name',
+        }),
         query
     )
         .search(['name'])
@@ -49,7 +52,10 @@ const getAllSubCategories = async (query: Record<string, unknown>) => {
 };
 
 const getSingleSubCategory = async (id: string) => {
-    const subCategory = await SubCategory.findById(id);
+    const subCategory = await SubCategory.findById(id).populate({
+        path: 'category',
+        select: 'name',
+    });
     if (!subCategory) {
         throw new AppError(httpStatus.NOT_FOUND, 'Subcategory not found');
     }
