@@ -1,5 +1,10 @@
 import { z } from 'zod';
-
+const locationSchema = z.object({
+    type: z.literal('Point'),
+    coordinates: z
+        .array(z.number())
+        .length(2, 'Coordinates must be [longitude, latitude]'),
+});
 const registerNormalUserValidationSchema = z.object({
     body: z.object({
         password: z
@@ -14,6 +19,9 @@ const registerNormalUserValidationSchema = z.object({
         }),
         email: z.string().email('Invalid email format'),
         phone: z.string().optional(),
+        location: locationSchema,
+        address: z.string({ required_error: 'Address is required' }),
+        dateOfBirth: z.date({ required_error: 'Date of birth is required' }),
     }),
 });
 
@@ -27,6 +35,11 @@ const updateNormalUserValidationSchema = z.object({
             .optional(),
         email: z.string().email('Invalid email format').optional(),
         phone: z.string().optional(),
+        location: locationSchema.optional(),
+        address: z.string().optional(),
+        dateOfBirth: z
+            .date({ required_error: 'Date of birth is required' })
+            .optional(),
     }),
 });
 
