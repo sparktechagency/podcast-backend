@@ -7,4 +7,9 @@ export interface ICreator {
     email: string;
     address?: string;
     profile_image?: string;
+    location: {
+        type: 'Point';
+        coordinates: [number, number];
+    };
+    dateOfBirth: Date;
 }

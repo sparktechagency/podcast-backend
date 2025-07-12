@@ -9,6 +9,13 @@ const CreatorSchema = new Schema<ICreator>(
         email: { type: String, required: true },
         address: { type: String },
         profile_image: { type: String, default: '' },
+        location: {
+            type: { type: String, enum: ['Point'], default: 'Point' },
+            coordinates: { type: [Number], required: true },
+        },
+        dateOfBirth: {
+            type: Date,
+        },
     },
     { timestamps: true }
 );

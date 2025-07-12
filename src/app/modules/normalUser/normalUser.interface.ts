@@ -7,4 +7,8 @@ export interface INormalUser {
     email: string;
     phone: string;
     profile_image: string;
+    location: {
+        type: 'Point';
+        coordinates: [number, number];
+    };
 }
