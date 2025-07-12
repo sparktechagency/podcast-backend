@@ -4,8 +4,22 @@ import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import Category from '../category/category.model';
+import SubCategory from '../subCategory/subCategory.model';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
+    const [category, subCategory] = await Promise.all([
+        Category.findById(payload.category),
+        SubCategory.findById(payload.subCategory),
+    ]);
+
+    if (!category || !subCategory) {
+        throw new AppError(
+            httpStatus.NOT_FOUND,
+            !category ? 'Category not found' : 'Sub category not found'
+        );
+    }
+
     return await Podcast.create({ ...payload, user: userId });
 };
 
