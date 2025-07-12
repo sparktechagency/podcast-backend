@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post(
     '/create',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
         if (req.body.data) {
@@ -36,7 +36,7 @@ router.get(
 
 router.patch(
     '/update/:albumId',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
         if (req.body.data) {
