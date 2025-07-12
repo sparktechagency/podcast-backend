@@ -3,6 +3,7 @@ import AppError from '../../error/appError';
 import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     return await Podcast.create({ ...payload, user: userId });
@@ -18,10 +19,16 @@ const updatePodcastIntoDB = async (
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
 
-    return await Podcast.findByIdAndUpdate(id, payload, {
+    const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
         new: true,
         runValidators: true,
     });
+
+    if (payload.coverImage && podcast?.coverImage) {
+        deleteFileFromS3(podcast?.coverImage);
+    }
+
+    return reuslt;
 };
 
 const getAllPodcasts = async (query: Record<string, unknown>) => {
