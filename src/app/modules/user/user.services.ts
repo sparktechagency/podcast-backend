@@ -206,6 +206,39 @@ const getMyProfile = async (userData: JwtPayload) => {
         result = await SuperAdmin.findById(userData.profileId);
     } else if (userData.role === USER_ROLE.admin) {
         result = await Admin.findById(userData.profileId);
+    } else if (userData.role == USER_ROLE.creator) {
+        result = await Creator.findById(userData.profileId);
+    }
+    return result;
+};
+
+const updateUserProfile = async (
+    userData: JwtPayload,
+    payload: Partial<INormalUser>
+) => {
+    let result = null;
+    if (userData.role === USER_ROLE.user) {
+        result = await NormalUser.findByIdAndUpdate(
+            userData.profileId,
+            payload,
+            { new: true, runValidators: true }
+        );
+    } else if (userData.role === USER_ROLE.superAdmin) {
+        result = await SuperAdmin.findByIdAndUpdate(
+            userData.profileId,
+            payload,
+            { new: true, runValidators: true }
+        );
+    } else if (userData.role === USER_ROLE.admin) {
+        result = await Admin.findByIdAndUpdate(userData.profileId, payload, {
+            new: true,
+            runValidators: true,
+        });
+    } else if (userData.role == USER_ROLE.creator) {
+        result = await Creator.findByIdAndUpdate(userData.profileId, payload, {
+            new: true,
+            runValidators: true,
+        });
     }
     return result;
 };
@@ -267,6 +300,7 @@ const userServices = {
     deleteUserAccount,
     verifyCode,
     resendVerifyCode,
+    updateUserProfile,
 };
 
 export default userServices;

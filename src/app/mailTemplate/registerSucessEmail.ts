@@ -77,18 +77,18 @@ const registrationSuccessEmailBody = (name: string, activationCode: number) => `
     <body>
       <div class="container">
         <div class="header">
-          <h1>Welcome to Strato!</h1>
+          <h1>Welcome to Preach Radio!</h1>
         </div>
         <div class="content">
           <h2>Hello ${name},</h2>
-          <p>Thank you for registering with <strong>Strato</strong>. To activate your account, please use the following activation code:</p>
+          <p>Thank you for registering with <strong>Preach Radio</strong>. To activate your account, please use the following activation code:</p>
           <div class="activation-code">${activationCode || 'XXXXXX'}</div>
           <p>Enter this code on the activation page within the next 5 minutes. If you don't verify your account, it will be deleted from our database and you will need to register again.</p>
           <p>If you didn't register, you can safely ignore this email.</p>
           <p>Need help? Contact us at <a href="mailto:support@strato.com">support@strato.com</a>.</p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Strato. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Preach Radio. All rights reserved.</p>
           <p><a href="https://strato.com/privacy">Privacy Policy</a> | <a href="https://strato.com/contact">Contact Us</a></p>
         </div>
       </div>
