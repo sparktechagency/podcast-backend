@@ -19,6 +19,7 @@ import sendEmail from '../../utilities/sendEmail';
 import registrationSuccessEmailBody from '../../mailTemplate/registerSucessEmail';
 import { createToken } from './user.utils';
 import config from '../../config';
+import Creator from '../creator/creator.model';
 dotenv.config();
 const generateVerifyCode = (): number => {
     return Math.floor(100000 + Math.random() * 900000);
@@ -61,10 +62,23 @@ const registerUser = async (
             ...userData,
             user: user[0]._id,
         };
-        const result = await NormalUser.create([normalUserPayload], {
-            session,
-        });
+        let result;
+        if (payload.role == USER_ROLE.creator) {
+            result = await Creator.create([normalUserPayload], {
+                session,
+            });
+        } else if (payload.role == USER_ROLE.user) {
+            result = await NormalUser.create([normalUserPayload], {
+                session,
+            });
+        }
 
+        if (!result) {
+            throw new AppError(
+                httpStatus.FAILED_DEPENDENCY,
+                'Failed to registration'
+            );
+        }
         await User.findByIdAndUpdate(
             user[0]._id,
             { profileId: result[0]._id },

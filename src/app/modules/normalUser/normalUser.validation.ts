@@ -21,7 +21,7 @@ const registerNormalUserValidationSchema = z.object({
         phone: z.string().optional(),
         location: locationSchema,
         address: z.string({ required_error: 'Address is required' }),
-        dateOfBirth: z.date({ required_error: 'Date of birth is required' }),
+        dateOfBirth: z.string({ required_error: 'Date of birth is required' }),
     }),
 });
 
@@ -38,7 +38,7 @@ const updateNormalUserValidationSchema = z.object({
         location: locationSchema.optional(),
         address: z.string().optional(),
         dateOfBirth: z
-            .date({ required_error: 'Date of birth is required' })
+            .string({ required_error: 'Date of birth is required' })
             .optional(),
     }),
 });

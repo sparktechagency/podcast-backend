@@ -13,4 +13,5 @@ export interface INormalUser {
         coordinates: [number, number];
     };
     role: (typeof USER_ROLE)[keyof typeof USER_ROLE];
+    address: string;
 }

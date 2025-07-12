@@ -28,6 +28,9 @@ const NormalUserSchema = new Schema<INormalUser>(
             type: { type: String, enum: ['Point'], default: 'Point' },
             coordinates: { type: [Number], required: true },
         },
+        address: {
+            type: String,
+        },
     },
     {
         timestamps: true,
