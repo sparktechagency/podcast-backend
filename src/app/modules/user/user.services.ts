@@ -240,6 +240,7 @@ const updateUserProfile = async (
             runValidators: true,
         });
     }
+
     return result;
 };
 

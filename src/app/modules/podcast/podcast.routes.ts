@@ -25,7 +25,7 @@ router.get('/all-podcasts', podcastController.getAllPodcasts);
 router.get('/get-single-podcast/:id', podcastController.getSinglePodcast);
 router.delete(
     '/delete-podcast/:id',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.superAdmin),
     podcastController.deletePodcast
 );
 
