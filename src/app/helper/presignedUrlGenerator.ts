@@ -89,15 +89,17 @@ export const generatePresignedUrl = async ({
 
     let folder = '';
     if (fileCategory === 'profile_image') {
-        folder = 'uploads/profile_images/';
+        folder = 'uploads/images/profile/';
     } else if (fileCategory === 'project_image') {
-        folder = 'uploads/project_image/';
-    } else if (fileCategory === 'video') {
+        folder = 'uploads/images/project_image/';
+    } else if (fileCategory === 'podcast_video') {
         folder = 'uploads/videos/';
     } else if (fileCategory === 'project_document') {
-        folder = 'uploads/project_document/';
+        folder = 'uploads/documents/project_document/';
     } else if (fileCategory === 'material_image') {
-        folder = 'uploads/project_material_image/';
+        folder = 'uploads/images/project_material_image/';
+    } else if (fileCategory === 'podcast_audio') {
+        folder = 'uploads/audios/';
     }
 
     const fileName = `${folder}${timestamp}-${Math.random()
@@ -105,7 +107,7 @@ export const generatePresignedUrl = async ({
         .substring(2, 15)}.${fileType.split('/')[1]}`;
 
     const command = new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME!,
+        Bucket: process.env.AWS_S3_BUCKET_NAME!,
         Key: fileName,
         ContentType: fileType,
         // ACL: 'public-read', // You can add this if needed and your bucket allows it

@@ -1,15 +1,23 @@
-import express from 'express';
 import auth from '../../middlewares/auth';
 import { USER_ROLE } from '../user/user.constant';
 import validateRequest from '../../middlewares/validateRequest';
 import podcastValidation from './podcast.validation';
 import podcastController from './podcast.controller';
+import express, { NextFunction, Request, Response } from 'express';
+import { uploadFile } from '../../helper/mutler-s3-uploader';
 
 const router = express.Router();
 
 router.post(
-    '/create-podcast',
+    '/create',
     auth(USER_ROLE.creator),
+    uploadFile(),
+    (req: Request, res: Response, next: NextFunction) => {
+        if (req.body.data) {
+            req.body = JSON.parse(req.body.data);
+        }
+        next();
+    },
     validateRequest(podcastValidation.createPodcastValidationSchema),
     podcastController.createPodcast
 );
@@ -17,6 +25,13 @@ router.post(
 router.patch(
     '/update-podcast/:id',
     auth(USER_ROLE.creator),
+    uploadFile(),
+    (req: Request, res: Response, next: NextFunction) => {
+        if (req.body.data) {
+            req.body = JSON.parse(req.body.data);
+        }
+        next();
+    },
     validateRequest(podcastValidation.updatePodcastValidationSchema),
     podcastController.updatePodcast
 );

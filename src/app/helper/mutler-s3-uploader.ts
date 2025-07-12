@@ -105,6 +105,8 @@ export const uploadFile = () => {
                 uploadPath = 'uploads/images/hotel_image';
             } else if (file.fieldname === 'thumbnail') {
                 uploadPath = 'uploads/images/thumbnail';
+            } else if (file.fieldname === 'podcast_cover') {
+                uploadPath = 'uploads/images/podcast_cover';
             } else {
                 uploadPath = 'uploads';
             }
