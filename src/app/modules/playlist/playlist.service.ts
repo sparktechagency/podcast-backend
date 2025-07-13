@@ -37,7 +37,7 @@ const getMyPlaylists = async (
     query: Record<string, unknown>
 ) => {
     const playlistQuery = new QueryBuilder(
-        PodcastPlaylist.find({ user: userId }).populate('podcasts'),
+        PodcastPlaylist.find({ user: userId }),
         query
     )
         .search(['name', 'description'])

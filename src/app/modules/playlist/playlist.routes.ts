@@ -25,19 +25,19 @@ router.post(
 );
 
 router.get(
-    '/all-podcast-playlists',
+    '/all',
     auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
     PodcastPlaylistController.getAllPlaylists
 );
 
 router.get(
-    '/my-podcast-playlists',
+    '/my-playlists',
     auth(USER_ROLE.user),
     PodcastPlaylistController.getMyPlaylists
 );
 
 router.get(
-    '/single-podcast-playlist/:playlistId',
+    '/get-single/:playlistId',
     auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
     PodcastPlaylistController.getPlaylistById
 );

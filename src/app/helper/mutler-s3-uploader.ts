@@ -34,7 +34,7 @@ export const uploadFile = () => {
             'reward_image',
             'video',
             'thumbnail',
-            'chat_images',
+            'playlist_cover',
             'chat_videos',
             'product_image',
             'pictures',
@@ -108,6 +108,8 @@ export const uploadFile = () => {
                 uploadPath = 'uploads/images/thumbnail';
             } else if (file.fieldname === 'podcast_cover') {
                 uploadPath = 'uploads/images/podcast_cover';
+            } else if (file.fieldname === 'playlist_cover') {
+                uploadPath = 'uploads/images/playlist_cover';
             } else {
                 uploadPath = 'uploads';
             }
@@ -143,11 +145,11 @@ export const uploadFile = () => {
         { name: 'class_banner', maxCount: 1 },
         { name: 'pictures', maxCount: 10 },
         { name: 'banner', maxCount: 1 },
-        { name: 'course_banner', maxCount: 1 },
+        { name: 'playlist_cover', maxCount: 1 },
         { name: 'video', maxCount: 5 },
         { name: 'chat_videos', maxCount: 2 },
         { name: 'chat_images', maxCount: 7 },
-        { name: 'podcast_cover', maxCount: 1 },
+        { name: 'podcast_cover  ', maxCount: 1 },
         { name: 'sub_category_image', maxCount: 1 },
     ]);
 
