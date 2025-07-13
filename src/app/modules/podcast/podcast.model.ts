@@ -35,6 +35,10 @@ const PodcastSchema = new Schema<IPodcast>(
 );
 
 PodcastSchema.index({ location: '2dsphere' });
+PodcastSchema.index({ creator: 1 });
+PodcastSchema.index({ category: 1 });
+PodcastSchema.index({ createdAt: -1 });
+PodcastSchema.index({ title: 'text', name: 'text', description: 'text' });
 
 const Podcast = model<IPodcast>('Podcast', PodcastSchema);
 export default Podcast;

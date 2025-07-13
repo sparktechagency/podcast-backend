@@ -29,7 +29,7 @@ router.get(
 );
 
 router.get(
-    '/single-album/:albumId',
+    '/get-single/:albumId',
     auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
     AlbumController.getAlbumById
 );

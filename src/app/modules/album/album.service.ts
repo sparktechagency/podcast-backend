@@ -10,10 +10,7 @@ const createAlbum = async (payload: IAlbum) => {
 };
 
 const getAllAlbums = async (query: Record<string, unknown>) => {
-    const albumQuery = new QueryBuilder(
-        Album.find().populate('podcasts'),
-        query
-    )
+    const albumQuery = new QueryBuilder(Album.find(), query)
         .search(['name', 'description'])
         .filter()
         .sort()
