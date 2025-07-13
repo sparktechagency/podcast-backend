@@ -23,7 +23,7 @@ router.post(
 );
 
 router.patch(
-    '/update-podcast/:id',
+    '/update/:id',
     auth(USER_ROLE.creator),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
@@ -36,8 +36,8 @@ router.patch(
     podcastController.updatePodcast
 );
 
-router.get('/all-podcasts', podcastController.getAllPodcasts);
-router.get('/get-single-podcast/:id', podcastController.getSinglePodcast);
+router.get('/all', podcastController.getAllPodcasts);
+router.get('/get-single/:id', podcastController.getSinglePodcast);
 router.delete(
     '/delete-podcast/:id',
     auth(USER_ROLE.creator, USER_ROLE.superAdmin),

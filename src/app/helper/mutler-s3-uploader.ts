@@ -39,7 +39,7 @@ export const uploadFile = () => {
             'product_image',
             'pictures',
             'banner',
-            'hotel_image',
+            'podcast_cover',
             'sub_category_image',
         ];
 
@@ -147,7 +147,7 @@ export const uploadFile = () => {
         { name: 'video', maxCount: 5 },
         { name: 'chat_videos', maxCount: 2 },
         { name: 'chat_images', maxCount: 7 },
-        { name: 'hotel_image', maxCount: 1 },
+        { name: 'podcast_cover', maxCount: 1 },
         { name: 'sub_category_image', maxCount: 1 },
     ]);
 

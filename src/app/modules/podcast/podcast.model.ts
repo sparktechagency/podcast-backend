@@ -20,8 +20,8 @@ const PodcastSchema = new Schema<IPodcast>(
         },
         name: { type: String, required: true },
         coverImage: { type: String, required: true },
-        video_url: { type: String, required: true },
-        audio_url: { type: String, required: true },
+        video_url: { type: String },
+        audio_url: { type: String },
         title: { type: String, required: true },
         description: { type: String, required: true },
         location: {

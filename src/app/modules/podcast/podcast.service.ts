@@ -20,7 +20,7 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
         );
     }
 
-    return await Podcast.create({ ...payload, user: userId });
+    return await Podcast.create({ ...payload, creator: userId });
 };
 
 const updatePodcastIntoDB = async (
@@ -28,7 +28,7 @@ const updatePodcastIntoDB = async (
     id: string,
     payload: Partial<IPodcast>
 ) => {
-    const podcast = await Podcast.findOne({ _id: id, user: userId });
+    const podcast = await Podcast.findOne({ _id: id, creator: userId });
     if (!podcast) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
@@ -69,7 +69,7 @@ const getSinglePodcast = async (id: string) => {
 };
 
 const deletePodcastFromDB = async (userId: string, id: string) => {
-    const podcast = await Podcast.findOne({ _id: id, user: userId });
+    const podcast = await Podcast.findOne({ _id: id, creator: userId });
     if (!podcast) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
