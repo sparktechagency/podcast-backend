@@ -23,7 +23,7 @@ router.patch(
 );
 router.get(
     '/get-all-user',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
+    // auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
     NormalUserController.getAllUser
 );
 
