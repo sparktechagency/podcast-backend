@@ -12,7 +12,6 @@ const NormalUserSchema = new Schema<INormalUser>(
             type: String,
             required: true,
         },
-
         email: {
             type: String,
             default: '',
@@ -24,9 +23,20 @@ const NormalUserSchema = new Schema<INormalUser>(
             type: String,
             default: '',
         },
+        profile_cover: {
+            type: String,
+            default: '',
+        },
+
         location: {
-            type: { type: String, enum: ['Point'], default: 'Point' },
-            coordinates: { type: [Number], required: true },
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point',
+            },
+            coordinates: {
+                type: [Number], // ✅ removed required: true to make it optional
+            },
         },
         address: {
             type: String,
@@ -36,6 +46,7 @@ const NormalUserSchema = new Schema<INormalUser>(
         timestamps: true,
     }
 );
+
 const NormalUser = model<INormalUser>('NormalUser', NormalUserSchema);
 
 export default NormalUser;

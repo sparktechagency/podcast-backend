@@ -8,6 +8,7 @@ export interface INormalUser {
     email: string;
     phone: string;
     profile_image: string;
+    profile_cover: string;
     location: {
         type: 'Point';
         coordinates: [number, number];

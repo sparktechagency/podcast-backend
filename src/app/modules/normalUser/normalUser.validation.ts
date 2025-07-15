@@ -19,7 +19,7 @@ const registerNormalUserValidationSchema = z.object({
         }),
         email: z.string().email('Invalid email format'),
         phone: z.string().optional(),
-        location: locationSchema,
+        // location: locationSchema.optional(),
         address: z.string({ required_error: 'Address is required' }),
         dateOfBirth: z.string({ required_error: 'Date of birth is required' }),
     }),

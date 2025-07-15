@@ -21,6 +21,7 @@ declare namespace Express {
             playlist_cover?: File[];
             album_cover?: File[];
             podcast_cover?: File[];
+            profile_cover?: File[];
         };
     }
 }
