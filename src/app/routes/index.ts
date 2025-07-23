@@ -13,6 +13,7 @@ import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
 import { albumRoutes } from '../modules/album/album.routes';
 import { categoryRoutes } from '../modules/category/category.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
+import { creatorRoutes } from '../modules/creator/creator.routes';
 
 const router = Router();
 
@@ -74,6 +75,10 @@ const moduleRoutes = [
     {
         path: '/sub-category',
         router: subCategoryRoutes,
+    },
+    {
+        path: '/creator',
+        router: creatorRoutes,
     },
 ];
 
