@@ -4,6 +4,7 @@ import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import podcastService from './podcast.service';
 import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
+import generateETag from '../../helper/generateEtag';
 
 const createPodcast = catchAsync(async (req, res) => {
     const file: any = req.files?.podcast_cover;
@@ -48,6 +49,16 @@ const getAllPodcasts = catchAsync(async (req, res) => {
 
 const getSinglePodcast = catchAsync(async (req, res) => {
     const result = await podcastService.getSinglePodcast(req.params.id);
+
+    const eTag = generateETag(result);
+
+    // Check If-None-Match header (sent by client if cached)
+    if (req.headers['if-none-match'] === eTag) {
+        return res.status(304).end(); // No change
+    }
+
+    // Set ETag header in the response
+    res.setHeader('ETag', eTag);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,

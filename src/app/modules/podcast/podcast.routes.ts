@@ -5,6 +5,7 @@ import podcastValidation from './podcast.validation';
 import podcastController from './podcast.controller';
 import express, { NextFunction, Request, Response } from 'express';
 import { uploadFile } from '../../helper/mutler-s3-uploader';
+import { publicCache } from '../../middlewares/cacheControl';
 
 const router = express.Router();
 
@@ -37,7 +38,11 @@ router.patch(
 );
 
 router.get('/all', podcastController.getAllPodcasts);
-router.get('/get-single/:id', podcastController.getSinglePodcast);
+router.get(
+    '/get-single/:id',
+    publicCache(),
+    podcastController.getSinglePodcast
+);
 router.delete(
     '/delete-podcast/:id',
     auth(USER_ROLE.creator, USER_ROLE.superAdmin),
