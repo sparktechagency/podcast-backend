@@ -1,5 +1,5 @@
 export const ENUM_GENDER = {
-    MALE: 'MALE',
-    FEMALE: 'FEMALE',
-    OTHER: 'OTHER',
+    MALE: 'Male',
+    FEMALE: 'Female',
+    OTHER: 'Other',
 };

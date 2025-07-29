@@ -6,6 +6,7 @@ import NormalUser from './normalUser.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 
 const updateUserProfile = async (id: string, payload: Partial<INormalUser>) => {
+    console.log('paylaod', payload);
     const user = await NormalUser.findById(id);
     if (!user) {
         throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');

@@ -25,6 +25,7 @@ export const uploadFile = () => {
         const allowedFieldnames = [
             'image',
             'profile_image',
+            'profile_cover',
             'topic_icon',
             'category_image',
             'team_logo',
@@ -85,6 +86,9 @@ export const uploadFile = () => {
             // Maintain the same folder structure as before
             if (file.fieldname === 'profile_image') {
                 uploadPath = 'uploads/images/profile';
+            }
+            if (file.fieldname === 'profile_cover') {
+                uploadPath = 'uploads/images/profile_cover';
             } else if (file.fieldname === 'category_image') {
                 uploadPath = 'uploads/images/category';
             } else if (file.fieldname === 'video') {
@@ -155,6 +159,7 @@ export const uploadFile = () => {
         { name: 'podcast_cover  ', maxCount: 1 },
         { name: 'sub_category_image', maxCount: 1 },
         { name: 'album_cover', maxCount: 1 },
+        { name: 'profile_cover', maxCount: 1 },
     ]);
 
     return upload;

@@ -18,6 +18,7 @@ import {
     generateMultiplePresignedUrls,
     generatePresignedUrl,
 } from './app/helper/presignedUrlGenerator';
+import redis from './app/utilities/redisClient';
 dotenv.config();
 
 // parser---------
@@ -53,7 +54,20 @@ app.use('/', router);
 app.post('/contact-us', sendContactUsEmail);
 
 app.get('/', async (req, res) => {
-    res.send({ message: 'Welcome to podcast server' });
+    res.send({ message: 'Welcome to podcast  22222' });
+});
+
+app.get('/redis-health', async (req, res) => {
+    try {
+        const result = await redis.ping(); // Should return "PONG"
+        res.json({ status: 'ok', redis: result });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Redis not connected',
+            error,
+        });
+    }
 });
 
 // for s3 bucket--------------

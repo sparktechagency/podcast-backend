@@ -1,5 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { INormalUser } from './normalUser.interface';
+import { ENUM_GENDER } from '../user/user.enum';
 
 const NormalUserSchema = new Schema<INormalUser>(
     {
@@ -40,6 +41,16 @@ const NormalUserSchema = new Schema<INormalUser>(
         },
         address: {
             type: String,
+            default: '',
+        },
+        dateOfBirth: {
+            type: Date,
+            default: null,
+        },
+        gender: {
+            type: String,
+            enum: Object.values(ENUM_GENDER),
+            default: '',
         },
     },
     {

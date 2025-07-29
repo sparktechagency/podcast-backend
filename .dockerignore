@@ -1,0 +1,32 @@
+# Node.js dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs
+*.log
+
+# IDE and OS-specific files
+.DS_Store
+.vscode
+.idea
+
+# Docker-related
+docker-compose.*
+Dockerfile*
+
+# Test files
+__tests__/
+coverage/
+
+# Git
+.git
+.gitignore

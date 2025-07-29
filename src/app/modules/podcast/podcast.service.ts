@@ -6,6 +6,9 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import Category from '../category/category.model';
 import SubCategory from '../subCategory/subCategory.model';
+import redis from '../../utilities/redisClient';
+import { createCacheKey } from '../../helper/createCacheKey';
+import { CACHE_TTL_SECONDS } from '../../constant';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
@@ -46,6 +49,15 @@ const updatePodcastIntoDB = async (
 };
 
 const getAllPodcasts = async (query: Record<string, unknown>) => {
+    const cacheKey = createCacheKey(query);
+
+    // 1. Try to get cached data from Redis
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        // Cache hit - parse and return
+        return JSON.parse(cachedData);
+    }
+
     const resultQuery = new QueryBuilder(Podcast.find(), query)
         .search(['name', 'title', 'description'])
         .fields()
@@ -55,8 +67,17 @@ const getAllPodcasts = async (query: Record<string, unknown>) => {
 
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
+    const dataToCache = { meta, result };
 
-    return { meta, result };
+    // 3. Store result in Redis cache with TTL
+    await redis.set(
+        cacheKey,
+        JSON.stringify(dataToCache),
+        'EX',
+        CACHE_TTL_SECONDS
+    );
+
+    return dataToCache;
 };
 
 const getSinglePodcast = async (id: string) => {
