@@ -17,8 +17,5 @@ const watchHistorySchema = new Schema<IWatchHistory>(
     { timestamps: true }
 );
 
-const watchHistoryModel = model<IWatchHistory>(
-    'WatchHistory',
-    watchHistorySchema
-);
-export default watchHistoryModel;
+const watchHistory = model<IWatchHistory>('WatchHistory', watchHistorySchema);
+export default watchHistory;

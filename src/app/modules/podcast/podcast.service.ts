@@ -9,6 +9,7 @@ import SubCategory from '../subCategory/subCategory.model';
 import redis from '../../utilities/redisClient';
 import { createCacheKey } from '../../helper/createCacheKey';
 import { CACHE_TTL_SECONDS } from '../../constant';
+import watchHistory from '../watchHistory/watchHistory.model';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
@@ -98,12 +99,19 @@ const deletePodcastFromDB = async (userId: string, id: string) => {
     return await Podcast.findByIdAndDelete(id);
 };
 
+const countPodcastView = async (profileId: string, podcastId: string) => {
+    await Podcast.findByIdAndUpdate(podcastId, { $inc: { totalView: 1 } });
+    await watchHistory.create({ user: profileId, podcast: podcastId });
+    return null;
+};
+
 const podcastService = {
     createPodcastIntoDB,
     updatePodcastIntoDB,
     getAllPodcasts,
     getSinglePodcast,
     deletePodcastFromDB,
+    countPodcastView,
 };
 
 export default podcastService;
