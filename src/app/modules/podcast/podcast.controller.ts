@@ -80,6 +80,18 @@ const deletePodcast = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const viewPodcast = catchAsync(async (req, res) => {
+    const result = await podcastService.countPodcastView(
+        req.user.profileId,
+        req.params.id
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcast viewed successfully',
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -87,6 +99,7 @@ const podcastController = {
     getAllPodcasts,
     getSinglePodcast,
     deletePodcast,
+    viewPodcast,
 };
 
 export default podcastController;

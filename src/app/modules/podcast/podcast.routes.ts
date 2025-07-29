@@ -48,5 +48,9 @@ router.delete(
     auth(USER_ROLE.creator, USER_ROLE.superAdmin),
     podcastController.deletePodcast
 );
-
+router.post(
+    '/view',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    podcastController.viewPodcast
+);
 export const podcastRoutes = router;
