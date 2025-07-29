@@ -16,4 +16,5 @@ export interface IPodcast {
     };
     address: string;
     tags: string[];
+    totalView: number;
 }

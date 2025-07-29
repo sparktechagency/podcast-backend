@@ -30,6 +30,10 @@ const PodcastSchema = new Schema<IPodcast>(
         },
         address: { type: String, required: true },
         tags: [{ type: String }],
+        totalView: {
+            type: Number,
+            default: 0,
+        },
     },
     { timestamps: true }
 );
