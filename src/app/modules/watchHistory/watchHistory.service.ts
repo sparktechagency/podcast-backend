@@ -5,7 +5,10 @@ const getWatchedHistory = async (
     profileId: string,
     query: Record<string, unknown>
 ) => {
-    const resultQuery = new QueryBuilder(WatchHistory.find(), query)
+    const resultQuery = new QueryBuilder(
+        WatchHistory.find({ user: profileId }),
+        query
+    )
         .search(['name', 'title', 'description'])
         .fields()
         .filter()

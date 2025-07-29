@@ -14,6 +14,7 @@ import { albumRoutes } from '../modules/album/album.routes';
 import { categoryRoutes } from '../modules/category/category.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 import { creatorRoutes } from '../modules/creator/creator.routes';
+import { watchHistoryRoutes } from '../modules/watchHistory/watchHistory.routes';
 
 const router = Router();
 
@@ -79,6 +80,10 @@ const moduleRoutes = [
     {
         path: '/creator',
         router: creatorRoutes,
+    },
+    {
+        path: '/watch-history',
+        router: watchHistoryRoutes,
     },
 ];
 
