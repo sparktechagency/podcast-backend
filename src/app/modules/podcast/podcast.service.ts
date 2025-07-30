@@ -10,6 +10,7 @@ import redis from '../../utilities/redisClient';
 import { createCacheKey } from '../../helper/createCacheKey';
 import { CACHE_TTL_SECONDS } from '../../constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
+import Album from '../album/album.model';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
@@ -105,6 +106,27 @@ const countPodcastView = async (profileId: string, podcastId: string) => {
     return null;
 };
 
+const getHomeData = async () => {
+    const [categories, newestPodcasts, popularPodcasts, reels, albums] =
+        await Promise.all([
+            Category.find().limit(10),
+            Podcast.find().sort({ createdAt: -1 }).limit(10),
+            Podcast.find().sort({ totalView: -1 }).limit(10),
+            Podcast.find({ duration: { $lte: 120 } })
+                .sort({ createdAt: -1 })
+                .limit(10),
+            Album.find().sort({ updatedAt: -1 }).limit(10),
+        ]);
+
+    return {
+        categories,
+        newestPodcasts,
+        popularPodcasts,
+        reels,
+        albums,
+    };
+};
+
 const podcastService = {
     createPodcastIntoDB,
     updatePodcastIntoDB,
@@ -112,6 +134,7 @@ const podcastService = {
     getSinglePodcast,
     deletePodcastFromDB,
     countPodcastView,
+    getHomeData,
 };
 
 export default podcastService;

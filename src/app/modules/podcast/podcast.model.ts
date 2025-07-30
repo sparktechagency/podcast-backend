@@ -34,6 +34,10 @@ const PodcastSchema = new Schema<IPodcast>(
             type: Number,
             default: 0,
         },
+        duration: {
+            type: Number,
+            required: true,
+        },
     },
     { timestamps: true }
 );
