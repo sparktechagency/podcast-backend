@@ -92,6 +92,15 @@ const viewPodcast = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getHomeData = catchAsync(async (req, res) => {
+    const result = await podcastService.getHomeData();
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcast home data retrieved successfully',
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -99,6 +108,7 @@ const podcastController = {
     getAllPodcasts,
     getSinglePodcast,
     deletePodcast,
+    getHomeData,
     viewPodcast,
 };
 
