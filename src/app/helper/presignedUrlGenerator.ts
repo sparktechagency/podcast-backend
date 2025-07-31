@@ -92,14 +92,23 @@ export const generatePresignedUrl = async ({
         folder = 'uploads/images/profile/';
     } else if (fileCategory === 'project_image') {
         folder = 'uploads/images/project_image/';
-    } else if (fileCategory === 'podcast_video') {
-        folder = 'uploads/videos/';
-    } else if (fileCategory === 'project_document') {
+    }
+
+
+    else if (fileCategory === 'project_document') {
         folder = 'uploads/documents/project_document/';
-    } else if (fileCategory === 'material_image') {
+    } 
+    else if (fileCategory === 'podcast_cover') {
+        folder = 'uploads/documents/podcast_cover/';
+    } 
+    else if (fileCategory === 'material_image') {
         folder = 'uploads/images/project_material_image/';
-    } else if (fileCategory === 'podcast_audio') {
-        folder = 'uploads/audios/';
+    } 
+    else if (fileCategory === 'podcast_video') {
+        folder = 'uploads/images/podcast_videos/';
+    } 
+    else if (fileCategory === 'podcast_audio') {
+        folder = 'uploads/podcast_audios/';
     }
 
     const fileName = `${folder}${timestamp}-${Math.random()
