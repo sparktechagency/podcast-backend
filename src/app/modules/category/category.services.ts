@@ -4,7 +4,6 @@ import AppError from '../../error/appError';
 import { ICategory } from './category.interface';
 import Category from './category.model';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
-import QueryBuilder from '../../builder/QueryBuilder';
 
 // create category into db
 const createCategoryIntoDB = async (payload: ICategory) => {
@@ -65,7 +64,7 @@ const data = await Category.aggregate([
         },
         {
             $lookup: {
-                from: 'subcategories', // ✅ lookup from subcategory collection
+                from: 'subcategories',
                 localField: '_id',
                 foreignField: 'category',
                 as: 'subcategories',
