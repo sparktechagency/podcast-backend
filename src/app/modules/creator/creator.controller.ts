@@ -43,11 +43,21 @@ const getSingleCreator = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getTopCreators = catchAsync(async (req, res) => {
+    const result = await CreatorService.getTopCreators(req.query);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Top creators retrieved successfully',
+        data: result,
+    });
+});
 
 const CreatorController = {
     updateCreatorProfile,
     getAllCreators,
     getSingleCreator,
+    getTopCreators,
 };
 
 export default CreatorController;

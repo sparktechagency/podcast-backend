@@ -30,8 +30,13 @@ router.get(
 
 router.get(
     '/single-creator/:id',
-    auth(USER_ROLE.superAdmin, USER_ROLE.creator),
+    auth(USER_ROLE.superAdmin, USER_ROLE.creator, USER_ROLE.user),
     CreatorController.getSingleCreator
+);
+router.get(
+    '/get-top-creators',
+    auth(USER_ROLE.superAdmin, USER_ROLE.creator, USER_ROLE.user),
+    CreatorController.getTopCreators
 );
 
 export const creatorRoutes = router;

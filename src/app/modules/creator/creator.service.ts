@@ -3,6 +3,9 @@ import AppError from '../../error/appError';
 import { ICreator } from './creator.interface';
 import Creator from './creator.model';
 import QueryBuilder from '../../builder/QueryBuilder';
+import Podcast from '../podcast/podcast.model';
+import { createCacheKey } from '../../helper/createCacheKey';
+import redis from '../../utilities/redisClient';
 
 const updateCreatorProfile = async (id: string, payload: Partial<ICreator>) => {
     const creator = await Creator.findById(id);
@@ -44,10 +47,86 @@ const getAllCreators = async (query: Record<string, unknown>) => {
     };
 };
 
+const getTopCreators = async (query: Record<string, unknown>) => {
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const cacheKey = createCacheKey(query) || `top-creators:${page}-${limit}`;
+
+    // 1. Try to get cached data from Redis
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        // Cache hit - parse and return
+        return JSON.parse(cachedData);
+    }
+
+    const topCreators = await Podcast.aggregate([
+        {
+            $group: {
+                _id: '$creator',
+                totalViews: { $sum: '$totalView' },
+            },
+        },
+        { $sort: { totalViews: -1 } },
+        { $limit: 10 },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'creatorInfo',
+            },
+        },
+        { $unwind: '$creatorInfo' },
+        {
+            $project: {
+                _id: 0,
+                creatorId: '$_id',
+                totalViews: 1,
+                name: '$creatorInfo.name',
+                email: '$creatorInfo.email',
+                profile_image: '$creatorInfo.profile_image',
+                profile_cover: '$creatorInfo.profile_cover',
+                phone: '$creatorInfo.phone',
+                location: '$creatorInfo.location',
+            },
+        },
+        {
+            $facet: {
+                result: [{ $skip: skip }, { $limit: limit }],
+                totalCount: [{ $count: 'total' }],
+            },
+        },
+    ]);
+
+    const result = topCreators[0]?.result || [];
+    const total = topCreators[0]?.totalCount[0]?.total || 0;
+    const totalPage = Math.ceil(total / limit);
+
+    const meta = {
+        page,
+        limit,
+        total,
+        totalPage,
+    };
+
+    const dataToCache = { meta, result };
+
+    // 3. Store result in Redis cache with TTL
+    await redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', 60 * 60);
+
+    return {
+        meta,
+        result,
+    };
+};
+
 const CreatorService = {
     updateCreatorProfile,
     getSingleCreator,
     getAllCreators,
+    getTopCreators,
 };
 
 export default CreatorService;

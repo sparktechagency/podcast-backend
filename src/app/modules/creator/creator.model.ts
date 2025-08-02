@@ -25,8 +25,7 @@ const CreatorSchema = new Schema<ICreator>(
         gender: {
             type: String,
             enum: Object.values(ENUM_GENDER),
-            default: '',
-        },
+            },
     },
     { timestamps: true }
 );

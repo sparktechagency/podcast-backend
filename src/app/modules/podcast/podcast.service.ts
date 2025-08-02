@@ -107,16 +107,54 @@ const countPodcastView = async (profileId: string, podcastId: string) => {
 };
 
 const getHomeData = async () => {
-    const [categories, newestPodcasts, popularPodcasts, reels, albums] =
-        await Promise.all([
-            Category.find().limit(10),
-            Podcast.find().sort({ createdAt: -1 }).limit(10),
-            Podcast.find().sort({ totalView: -1 }).limit(10),
-            Podcast.find({ duration: { $lte: 120 } })
-                .sort({ createdAt: -1 })
-                .limit(10),
-            Album.find().sort({ updatedAt: -1 }).limit(10),
-        ]);
+    const [
+        categories,
+        newestPodcasts,
+        popularPodcasts,
+        reels,
+        albums,
+        topCreators,
+    ] = await Promise.all([
+        Category.find().limit(10),
+        Podcast.find().sort({ createdAt: -1 }).limit(10),
+        Podcast.find().sort({ totalView: -1 }).limit(10),
+        Podcast.find({ duration: { $lte: 120 } })
+            .sort({ createdAt: -1 })
+            .limit(10),
+        Album.find().sort({ updatedAt: -1 }).limit(10),
+        Podcast.aggregate([
+            {
+                $group: {
+                    _id: '$creator',
+                    totalViews: { $sum: '$totalView' },
+                },
+            },
+            { $sort: { totalViews: -1 } },
+            { $limit: 10 },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'creatorInfo',
+                },
+            },
+            { $unwind: '$creatorInfo' },
+            {
+                $project: {
+                    _id: 0,
+                    creatorId: '$_id',
+                    totalViews: 1,
+                    name: '$creatorInfo.name',
+                    email: '$creatorInfo.email',
+                    profile_image: '$creatorInfo.profile_image',
+                    profile_cover: '$creatorInfo.profile_cover',
+                    phone: '$creatorInfo.phone',
+                    location: '$creatorInfo.location',
+                },
+            },
+        ]),
+    ]);
 
     return {
         categories,
@@ -124,6 +162,7 @@ const getHomeData = async () => {
         popularPodcasts,
         reels,
         albums,
+        topCreators,
     };
 };
 
