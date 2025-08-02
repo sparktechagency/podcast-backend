@@ -18,7 +18,6 @@ const PodcastSchema = new Schema<IPodcast>(
             ref: 'SubCategory',
             required: true,
         },
-        name: { type: String, required: true },
         coverImage: { type: String, required: true },
         video_url: { type: String },
         audio_url: { type: String },

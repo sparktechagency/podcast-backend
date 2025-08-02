@@ -11,6 +11,7 @@ import { createCacheKey } from '../../helper/createCacheKey';
 import { CACHE_TTL_SECONDS } from '../../constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
 import Album from '../album/album.model';
+import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
@@ -23,6 +24,13 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
             httpStatus.NOT_FOUND,
             !category ? 'Category not found' : 'Sub category not found'
         );
+    }
+
+    if (payload.audio_url) {
+        payload.audio_url = getCloudFrontUrl(payload.audio_url);
+    }
+    if (payload.video_url) {
+        payload.audio_url = getCloudFrontUrl(payload.video_url);
     }
 
     return await Podcast.create({ ...payload, creator: userId });
@@ -42,6 +50,15 @@ const updatePodcastIntoDB = async (
         new: true,
         runValidators: true,
     });
+
+    if (payload.audio_url) {
+        payload.audio_url = getCloudFrontUrl(payload.audio_url);
+        deleteFileFromS3(podcast?.audio_url);
+    }
+    if (payload.video_url) {
+        payload.audio_url = getCloudFrontUrl(payload.video_url);
+        deleteFileFromS3(podcast?.video_url);
+    }
 
     if (payload.coverImage && podcast?.coverImage) {
         deleteFileFromS3(podcast?.coverImage);
@@ -96,7 +113,14 @@ const deletePodcastFromDB = async (userId: string, id: string) => {
     if (!podcast) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
-
+    if (podcast.audio_url) {
+        podcast.audio_url = getCloudFrontUrl(podcast.audio_url);
+        deleteFileFromS3(podcast?.audio_url);
+    }
+    if (podcast.video_url) {
+        podcast.audio_url = getCloudFrontUrl(podcast.video_url);
+        deleteFileFromS3(podcast?.video_url);
+    }
     return await Podcast.findByIdAndDelete(id);
 };
 
