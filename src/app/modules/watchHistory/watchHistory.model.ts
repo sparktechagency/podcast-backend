@@ -4,9 +4,8 @@ import { IWatchHistory } from './watchHistory.interface';
 const watchHistorySchema = new Schema<IWatchHistory>(
     {
         user: {
-            type: Schema.Types.ObjectId,
+            type: String,
             required: true,
-            ref: 'NormalUser',
         },
         podcast: {
             type: Schema.Types.ObjectId,
