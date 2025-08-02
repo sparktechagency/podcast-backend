@@ -3,14 +3,9 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import podcastService from './podcast.service';
-import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import generateETag from '../../helper/generateEtag';
 
 const createPodcast = catchAsync(async (req, res) => {
-    const file: any = req.files?.podcast_cover;
-    if (req.files?.podcast_cover) {
-        req.body.coverImage = getCloudFrontUrl(file[0].key);
-    }
     const result = await podcastService.createPodcastIntoDB(
         req.user.profileId,
         req.body

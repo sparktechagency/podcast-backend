@@ -14,6 +14,7 @@ import Album from '../album/album.model';
 import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
 
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
+    console.log('payload', payload);
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
         SubCategory.findById(payload.subCategory),
@@ -31,6 +32,9 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     }
     if (payload.video_url) {
         payload.audio_url = getCloudFrontUrl(payload.video_url);
+    }
+    if (payload.coverImage) {
+        payload.coverImage = getCloudFrontUrl(payload.coverImage);
     }
 
     return await Podcast.create({ ...payload, creator: userId });
@@ -131,6 +135,13 @@ const countPodcastView = async (profileId: string, podcastId: string) => {
 };
 
 const getHomeData = async () => {
+    const cacheKey = 'home:data';
+
+    // 1. Try to get cached data
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return JSON.parse(cachedData);
+    }
     const [
         categories,
         newestPodcasts,
@@ -179,6 +190,15 @@ const getHomeData = async () => {
             },
         ]),
     ]);
+    const response = {
+        categories,
+        newestPodcasts,
+        popularPodcasts,
+        reels,
+        albums,
+        topCreators,
+    };
+    await redis.set(cacheKey, JSON.stringify(response), 'EX', 60 * 60);
 
     return {
         categories,

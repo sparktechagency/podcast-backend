@@ -11,7 +11,6 @@ const createPodcastValidationSchema = z.object({
     body: z.object({
         category: z.string({ required_error: 'Category is required' }),
         subCategory: z.string({ required_error: 'Category is required' }),
-        name: z.string().min(1, 'Podcast name is required'),
         coverImage: z.string().optional(),
         video_url: z.string().optional(),
         audio_url: z.string().optional(),
