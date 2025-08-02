@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { ICreator } from './creator.interface';
+import { ENUM_GENDER } from '../user/user.enum';
 
 const CreatorSchema = new Schema<ICreator>(
     {
@@ -15,6 +16,16 @@ const CreatorSchema = new Schema<ICreator>(
         },
         dateOfBirth: {
             type: Date,
+        },
+        profile_cover: {
+            type: String,
+            default: '',
+        },
+
+        gender: {
+            type: String,
+            enum: Object.values(ENUM_GENDER),
+            default: '',
         },
     },
     { timestamps: true }

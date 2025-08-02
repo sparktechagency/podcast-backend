@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { ENUM_GENDER } from '../user/user.enum';
 
 export interface ICreator {
     user: Types.ObjectId;
@@ -12,4 +13,6 @@ export interface ICreator {
         coordinates: [number, number];
     };
     dateOfBirth: Date;
+    profile_cover: string;
+    gender:(typeof ENUM_GENDER)[keyof typeof ENUM_GENDER]
 }

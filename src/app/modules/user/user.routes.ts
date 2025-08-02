@@ -58,7 +58,6 @@ router.patch(
 router.patch(
     '/change-status/:id',
     auth(USER_ROLE.superAdmin),
-    validateRequest(userValidations.changeUserStatus),
     userControllers.changeUserStatus
 );
 router.delete(
