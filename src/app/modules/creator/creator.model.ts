@@ -26,6 +26,10 @@ const CreatorSchema = new Schema<ICreator>(
             type: String,
             enum: Object.values(ENUM_GENDER),
         },
+        isApproved: {
+            type: Boolean,
+            default: false,
+        },
     },
     { timestamps: true }
 );

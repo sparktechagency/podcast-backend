@@ -122,10 +122,30 @@ const getTopCreators = async (query: Record<string, unknown>) => {
     };
 };
 
+const approveRejectCreator = async (id: string, isApproved: boolean) => {
+    if (isApproved) {
+        const result = await Creator.findByIdAndUpdate(
+            id,
+            { isApproved: true },
+            { new: true, runValidators: true }
+        );
+        return result;
+    } else if (isApproved == false) {
+        const result = await Creator.findByIdAndDelete(id);
+        return result;
+    } else {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Invalid approval status, you need to pass true or false'
+        );
+    }
+};
+
 const CreatorService = {
     updateCreatorProfile,
     getSingleCreator,
     getAllCreators,
+    approveRejectCreator,
     getTopCreators,
 };
 
