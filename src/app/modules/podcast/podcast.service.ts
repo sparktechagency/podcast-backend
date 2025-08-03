@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import AppError from '../../error/appError';
 import { IPodcast } from './podcast.interface';
@@ -101,6 +102,48 @@ const getAllPodcasts = async (query: Record<string, unknown>) => {
     );
 
     return dataToCache;
+};
+
+const getPodcastFeedForUser = async (
+    userId: string,
+    query: Record<string, unknown>
+) => {
+    // 1. If no category/subcategory provided, try to use the last watched one
+    if (!query.category || !query.subCategory) {
+        const lastWatched: any = await WatchHistory.findOne({
+            user: userId,
+        })
+            .populate({ path: 'podcast', select: 'category subcategory' })
+            .sort({ watchedAt: -1 });
+
+        query.category =
+            query.category || lastWatched?.podcast.category?.toString();
+        query.subCategory =
+            query.subCategory || lastWatched?.podcast?.subCategory?.toString();
+    }
+
+    // 2. Find already watched podcast ids
+    const watchedPodcastIds = await WatchHistory.find({
+        user: userId,
+    }).distinct('podcast');
+
+    const resultQuery = new QueryBuilder(
+        Podcast.find({ _id: { $nin: watchedPodcastIds } }),
+        query
+    )
+        .search(['name', 'title', 'description'])
+        .fields()
+        .filter()
+        .paginate()
+        .sort();
+
+    const result = await resultQuery.modelQuery;
+    const meta = await resultQuery.countTotal();
+
+    return {
+        meta,
+        result,
+    };
 };
 
 const getSinglePodcast = async (id: string) => {
@@ -218,6 +261,7 @@ const podcastService = {
     deletePodcastFromDB,
     countPodcastView,
     getHomeData,
+    getPodcastFeedForUser,
 };
 
 export default podcastService;

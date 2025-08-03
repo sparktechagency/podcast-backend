@@ -41,6 +41,18 @@ const getAllPodcasts = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getPodcastFeedForUser = catchAsync(async (req, res) => {
+    const result = await podcastService.getPodcastFeedForUser(
+        req.user.profileId,
+        req.query
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcasts retrieved successfully',
+        data: result,
+    });
+});
 
 const getSinglePodcast = catchAsync(async (req, res) => {
     const result = await podcastService.getSinglePodcast(req.params.id);
@@ -105,6 +117,7 @@ const podcastController = {
     deletePodcast,
     getHomeData,
     viewPodcast,
+    getPodcastFeedForUser,
 };
 
 export default podcastController;

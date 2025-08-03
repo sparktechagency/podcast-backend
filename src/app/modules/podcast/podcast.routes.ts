@@ -39,6 +39,11 @@ router.patch(
 
 router.get('/all', podcastController.getAllPodcasts);
 router.get(
+    '/all',
+    auth(USER_ROLE.user),
+    podcastController.getPodcastFeedForUser
+);
+router.get(
     '/get-single/:id',
     publicCache(),
     podcastController.getSinglePodcast
