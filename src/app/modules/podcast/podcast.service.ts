@@ -108,7 +108,6 @@ const getPodcastFeedForUser = async (
     userId: string,
     query: Record<string, unknown>
 ) => {
-    // 1. If no category/subcategory provided, try to use the last watched one
     if (!query.category || !query.subCategory) {
         const lastWatched: any = await WatchHistory.findOne({
             user: userId,
@@ -122,10 +121,20 @@ const getPodcastFeedForUser = async (
             query.subCategory || lastWatched?.podcast?.subCategory?.toString();
     }
 
-    // 2. Find already watched podcast ids
     const watchedPodcastIds = await WatchHistory.find({
         user: userId,
     }).distinct('podcast');
+
+    // 2. Generate unique cache key
+    const cacheKey = `feed:user:${userId}:${watchedPodcastIds}:${createCacheKey(
+        query
+    )}`;
+
+    // 3. Try to fetch from Redis
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return JSON.parse(cachedData);
+    }
 
     const resultQuery = new QueryBuilder(
         Podcast.find({ _id: { $nin: watchedPodcastIds } }),
@@ -139,12 +148,88 @@ const getPodcastFeedForUser = async (
 
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
-
+    const dataToCache = {
+        meta,
+        result,
+    };
+    await redis.set(
+        cacheKey,
+        JSON.stringify(dataToCache),
+        'EX',
+        CACHE_TTL_SECONDS // e.g. 300 seconds = 5 min
+    );
     return {
         meta,
         result,
     };
 };
+
+// const getPodcastFeedForUser = async (
+//     userId: string,
+//     query: Record<string, unknown>
+// ) => {
+//     const { page = 1, limit = 10 } = query;
+//     let { category, subCategory } = query;
+
+//     // Fallback to last watched category/subCategory
+//     if (!category || !subCategory) {
+//         const lastWatched: any = await WatchHistory.findOne({ user: userId })
+//             .populate({ path: 'podcast', select: 'category subCategory' })
+//             .sort({ watchedAt: -1 });
+
+//         category = category || lastWatched?.podcast?.category?.toString();
+//         subCategory =
+//             subCategory || lastWatched?.podcast?.subCategory?.toString();
+//     }
+
+//     // Cache key only for category/subCategory
+//     const baseCacheKey = `feed:category:${category}:sub:${subCategory}`;
+
+//     let basePodcastList: IPodcast[] = [];
+
+//     // Try cache
+//     const cachedData = await redis.get(baseCacheKey);
+//     if (cachedData) {
+//         basePodcastList = JSON.parse(cachedData);
+//     } else {
+//         // Fetch and cache if not found
+//         basePodcastList = await Podcast.find({ category, subCategory })
+//             .sort({ createdAt: -1 })
+//             .limit(50)
+//             .lean();
+//         await redis.set(
+//             baseCacheKey,
+//             JSON.stringify(basePodcastList),
+//             'EX',
+//             60 * 3
+//         );
+//     }
+
+//     // Get user's watched podcast IDs
+//     const watchedIds = await WatchHistory.find({ user: userId }).distinct(
+//         'podcast'
+//     );
+
+//     // Filter out watched podcasts
+//     const unwatchedList = basePodcastList.filter(
+//         (podcast: any) => !watchedIds.includes(podcast._id.toString())
+//     );
+
+//     // Paginate
+//     const start = (Number(page) - 1) * Number(limit);
+//     const end = start + Number(limit);
+//     const paginated = unwatchedList.slice(start, end);
+
+//     return {
+//         meta: {
+//             total: unwatchedList.length,
+//             page: Number(page),
+//             limit: Number(limit),
+//             totalPage: Number(unwatchedList.length / Number(limit)),
+//         },
+//         result: paginated,
+//     };
+// };
 
 const getSinglePodcast = async (id: string) => {
     const podcast = await Podcast.findById(id);

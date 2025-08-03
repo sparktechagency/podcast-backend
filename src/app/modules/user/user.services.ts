@@ -264,6 +264,11 @@ cron.schedule('*/2 * * * *', async () => {
                 user: { $in: expiredUserIds },
             });
 
+            // delete corresponding creator
+            const creatorDeletedResult = await Creator.deleteMany({
+                user: { $in: expiredUserIds },
+            });
+
             // Delete the expired User documents
             const userDeleteResult = await User.deleteMany({
                 _id: { $in: expiredUserIds },
@@ -274,6 +279,9 @@ cron.schedule('*/2 * * * *', async () => {
             );
             console.log(
                 `Deleted ${normalUserDeleteResult.deletedCount} associated NormalUser documents`
+            );
+            console.log(
+                `Deleted ${creatorDeletedResult.deletedCount} associated NormalUser documents`
             );
         }
     } catch (error) {

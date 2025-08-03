@@ -14,5 +14,6 @@ export interface ICreator {
     };
     dateOfBirth: Date;
     profile_cover: string;
-    gender:(typeof ENUM_GENDER)[keyof typeof ENUM_GENDER]
+    gender: (typeof ENUM_GENDER)[keyof typeof ENUM_GENDER];
+    isApproved: boolean;
 }
