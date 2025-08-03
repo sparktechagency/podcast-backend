@@ -38,5 +38,10 @@ router.get(
     auth(USER_ROLE.superAdmin, USER_ROLE.creator, USER_ROLE.user),
     CreatorController.getTopCreators
 );
+router.get(
+    '/approve-reject/:id',
+    auth(USER_ROLE.superAdmin),
+    CreatorController.approveRejectCreator
+);
 
 export const creatorRoutes = router;

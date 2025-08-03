@@ -52,12 +52,29 @@ const getTopCreators = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const approveRejectCreator = catchAsync(async (req, res) => {
+    const result = await CreatorService.approveRejectCreator(
+        req.params.id,
+        req.body.isApproved
+    );
+
+    const message = req.body.isApproved
+        ? 'Creator approved successfully'
+        : 'Creator rejected successfully';
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: message,
+        data: result,
+    });
+});
 
 const CreatorController = {
     updateCreatorProfile,
     getAllCreators,
     getSingleCreator,
     getTopCreators,
+    approveRejectCreator,
 };
 
 export default CreatorController;
