@@ -30,7 +30,6 @@ const getMyProfile = catchAsync(async (req, res) => {
 });
 
 const updateUserProfile = catchAsync(async (req, res) => {
-
     const file: any = req.files?.profile_image;
     if (req.files?.profile_image) {
         req.body.profile_image = getCloudFrontUrl(file[0].key);

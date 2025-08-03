@@ -29,7 +29,10 @@ const getSingleUser = async (id: string) => {
 };
 
 const getAllUsers = async (query: Record<string, unknown>) => {
-    const resultQuery = new QueryBuilder(NormalUser.find(), query)
+    const resultQuery = new QueryBuilder(
+        NormalUser.find().populate('user', 'isBlocked'),
+        query
+    )
         .search(['name'])
         .fields()
         .filter()

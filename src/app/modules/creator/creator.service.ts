@@ -31,7 +31,10 @@ const getSingleCreator = async (id: string) => {
 };
 
 const getAllCreators = async (query: Record<string, unknown>) => {
-    const resultQuery = new QueryBuilder(Creator.find(), query)
+    const resultQuery = new QueryBuilder(
+        Creator.find().populate('user', 'isBlocked'),
+        query
+    )
         .search(['name', 'email'])
         .fields()
         .filter()
