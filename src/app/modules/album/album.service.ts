@@ -23,7 +23,24 @@ const getAllAlbums = async (query: Record<string, unknown>) => {
 };
 
 const getAlbumById = async (albumId: string) => {
-    const album = await Album.findById(albumId).populate('podcasts');
+    const album = await Album.findById(albumId).populate({
+        path: 'podcasts',
+        select: 'title name , coverImage description, duration audio_url video_url creator subCategory category address location tags totalView createdAt',
+        populate: [
+            {
+                path: 'category',
+                select: 'name',
+            },
+            {
+                path: 'subCategory',
+                select: 'name',
+            },
+            {
+                path: 'creator',
+                select: 'name profile_image', // optional, in case you want creator details too
+            },
+        ],
+    });
     if (!album) {
         throw new AppError(httpStatus.NOT_FOUND, 'Album not found');
     }
