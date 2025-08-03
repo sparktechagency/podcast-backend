@@ -6,6 +6,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import Podcast from '../podcast/podcast.model';
 import { createCacheKey } from '../../helper/createCacheKey';
 import redis from '../../utilities/redisClient';
+import { User } from '../user/user.model';
 
 const updateCreatorProfile = async (id: string, payload: Partial<ICreator>) => {
     const creator = await Creator.findById(id);
@@ -126,6 +127,10 @@ const getTopCreators = async (query: Record<string, unknown>) => {
 };
 
 const approveRejectCreator = async (id: string, isApproved: boolean) => {
+    const creator = await Creator.findById(id);
+    if (!creator) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Creator not found');
+    }
     if (isApproved) {
         const result = await Creator.findByIdAndUpdate(
             id,
@@ -134,8 +139,9 @@ const approveRejectCreator = async (id: string, isApproved: boolean) => {
         );
         return result;
     } else if (isApproved == false) {
-        const result = await Creator.findByIdAndDelete(id);
-        return result;
+        await Creator.findByIdAndDelete(id);
+        await User.deleteOne({ _id: creator.user });
+        return null;
     } else {
         throw new AppError(
             httpStatus.BAD_REQUEST,
