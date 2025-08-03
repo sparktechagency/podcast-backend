@@ -32,6 +32,12 @@ const getSingleCreator = async (id: string) => {
 };
 
 const getAllCreators = async (query: Record<string, unknown>) => {
+    const cacheKey = `all-creators:${createCacheKey(query)}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        // Cache hit - parse and return
+        return JSON.parse(cachedData);
+    }
     const resultQuery = new QueryBuilder(
         Creator.find().populate('user', 'isBlocked'),
         query
@@ -44,7 +50,8 @@ const getAllCreators = async (query: Record<string, unknown>) => {
 
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
-
+    const dataToCache = { meta, result };
+    await redis.set(cacheKey, JSON.stringify(dataToCache), 'EX', 60 * 10);
     return {
         meta,
         result,
