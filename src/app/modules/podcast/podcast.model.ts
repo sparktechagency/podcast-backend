@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { IPodcast } from './podcast.interface';
+import redis from '../../utilities/redisClient';
 
 const PodcastSchema = new Schema<IPodcast>(
     {
@@ -46,6 +47,10 @@ PodcastSchema.index({ creator: 1 });
 PodcastSchema.index({ category: 1 });
 PodcastSchema.index({ createdAt: -1 });
 PodcastSchema.index({ title: 'text', name: 'text', description: 'text' });
+
+PodcastSchema.post(['save'], async function () {
+    await redis.del('home:data');
+});
 
 const Podcast = model<IPodcast>('Podcast', PodcastSchema);
 export default Podcast;
