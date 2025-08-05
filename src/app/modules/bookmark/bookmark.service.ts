@@ -1,21 +1,41 @@
-import httpStatus from "http-status";
-import AppError from "../../error/appError";
-import { IBookmark } from "./bookmark.interface";
-import bookmarkModel from "./bookmark.model";
+import httpStatus from 'http-status';
+import AppError from '../../error/appError';
+import Podcast from '../podcast/podcast.model';
+import Bookmark from './bookmark.model';
 
-const updateUserProfile = async (id: string, payload: Partial<IBookmark>) => {
-    if (payload.email || payload.username) {
-        throw new AppError(httpStatus.BAD_REQUEST, "You cannot change the email or username");
+const bookmarkAddDelete = async (profileId: string, podcastId: string) => {
+    const podcast = await Podcast.findById(podcastId);
+    if (!podcast) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
-    const user = await bookmarkModel.findById(id);
-    if (!user) {
-        throw new AppError(httpStatus.NOT_FOUND, "Profile not found");
-    }
-    return await bookmarkModel.findByIdAndUpdate(id, payload, {
-        new: true,
-        runValidators: true,
+    const bookmark = await Bookmark.findOne({
+        user: profileId,
+        podcast: podcastId,
     });
+    if (bookmark) {
+        await Bookmark.findOneAndDelete({
+            user: profileId,
+            podcast: podcastId,
+        });
+        return null;
+    } else {
+        const result = await Bookmark.create({
+            user: profileId,
+            podcast: podcastId,
+        });
+        return result;
+    }
 };
 
-const BookmarkServices = { updateUserProfile };
-export default BookmarkServices;
+// get bookmark from db
+const getMyBookmarkFromDB = async (profileId: string) => {
+    const result = await Bookmark.find({ user: profileId });
+    return result;
+};
+
+const productBookmarkServices = {
+    bookmarkAddDelete,
+    getMyBookmarkFromDB,
+};
+
+export default productBookmarkServices;
