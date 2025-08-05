@@ -38,6 +38,10 @@ const PodcastSchema = new Schema<IPodcast>(
             type: Number,
             required: true,
         },
+        liker: {
+            type: [Schema.Types.ObjectId],
+            ref: 'NormalUser',
+        },
     },
     { timestamps: true }
 );
