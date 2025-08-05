@@ -29,7 +29,24 @@ const bookmarkAddDelete = async (profileId: string, podcastId: string) => {
 
 // get bookmark from db
 const getMyBookmarkFromDB = async (profileId: string) => {
-    const result = await Bookmark.find({ user: profileId });
+    const result = await Bookmark.find({ user: profileId }).populate({
+        path: 'podcast',
+        select: 'title duration creator subCategory category totalView createdAt',
+        populate: [
+            {
+                path: 'category',
+                select: 'name',
+            },
+            {
+                path: 'subCategory',
+                select: 'name',
+            },
+            {
+                path: 'creator',
+                select: 'name profile_image',
+            },
+        ],
+    });
     return result;
 };
 

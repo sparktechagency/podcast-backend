@@ -6,7 +6,7 @@ const bookmarkSchema = new Schema<IBookmark>(
         podcast: {
             type: Schema.Types.ObjectId,
             default: null,
-            ref: 'Product',
+            ref: 'Podcast',
         },
         user: {
             type: String,
