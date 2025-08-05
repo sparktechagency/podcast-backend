@@ -8,10 +8,20 @@ const createComment = catchAsync(async (req, res) => {
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: 'Profile updated successfully',
+        message: 'Comment created successfully',
         data: result,
     });
 });
 
-const CommentController = { createComment };
+const createReply = catchAsync(async (req, res) => {
+    const result = await commentServices.createComment(req.user, req.body);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Reply created successfully',
+        data: result,
+    });
+});
+
+const CommentController = { createComment, createReply };
 export default CommentController;

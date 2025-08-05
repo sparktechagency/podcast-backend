@@ -8,10 +8,16 @@ import commentController from './comment.controller';
 const router = express.Router();
 
 router.post(
-    '/create',
+    '/create-comment',
     auth(USER_ROLE.user),
     validateRequest(commentValidations.createCommentSchema),
     commentController.createComment
+);
+router.post(
+    '/create-reply',
+    auth(USER_ROLE.user),
+    validateRequest(commentValidations.createReplySchema),
+    commentController.createReply
 );
 
 export const commentRoutes = router;
