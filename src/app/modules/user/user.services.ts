@@ -294,6 +294,7 @@ const changeUserStatus = async (id: string) => {
     if (!user) {
         throw new AppError(httpStatus.NOT_FOUND, 'User not found');
     }
+
     const result = await User.findByIdAndUpdate(
         id,
         { isBlocked: !user.isBlocked },
