@@ -37,5 +37,5 @@ const commentSchema = new Schema<IComment>(
     { timestamps: true }
 );
 
-const commentModel = model<IComment>('Comment', commentSchema);
-export default commentModel;
+const Comment = model<IComment>('Comment', commentSchema);
+export default Comment;

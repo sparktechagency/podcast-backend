@@ -442,7 +442,20 @@ const getPodcastFeedForUser = async (
 };
 
 const getSinglePodcast = async (id: string) => {
-    const podcast = await Podcast.findById(id);
+    const podcast = await Podcast.findById(id).populate([
+        {
+            path: 'creator',
+            select: 'name profile_image',
+        },
+        {
+            path: 'category',
+            select: 'name',
+        },
+        {
+            path: 'subCategory',
+            select: 'name',
+        },
+    ]);
     if (!podcast) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
