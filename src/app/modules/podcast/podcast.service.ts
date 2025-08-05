@@ -505,16 +505,20 @@ const getHomeData = async () => {
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
+            .populate('creator', 'name profile_image')
             .sort({ createdAt: -1 })
             .limit(10),
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
+            .populate('creator', 'name profile_image')
+
             .sort({ totalView: -1 })
             .limit(10),
         Podcast.find({ duration: { $lte: 120 } })
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
+            .populate('creator', 'name profile_image')
             .sort({ createdAt: -1 })
             .limit(10),
         Album.find().sort({ updatedAt: -1 }).limit(10),

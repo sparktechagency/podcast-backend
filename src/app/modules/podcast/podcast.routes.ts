@@ -54,7 +54,7 @@ router.delete(
     podcastController.deletePodcast
 );
 router.post(
-    '/view',
+    '/view/:id',
     auth(USER_ROLE.user, USER_ROLE.creator),
     podcastController.viewPodcast
 );
