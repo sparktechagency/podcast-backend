@@ -9,15 +9,26 @@ const router = express.Router();
 
 router.post(
     '/create-comment',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     validateRequest(commentValidations.createCommentSchema),
     commentController.createComment
 );
 router.post(
     '/create-reply',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     validateRequest(commentValidations.createReplySchema),
     commentController.createReply
+);
+router.patch(
+    '/update-comment/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    validateRequest(commentValidations.updateCommentValidationSchema),
+    commentController.updateComment
+);
+router.delete(
+    '/delete-comment/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    commentController.deleteComment
 );
 
 export const commentRoutes = router;

@@ -28,10 +28,49 @@ const createReply = async (user: JwtPayload, payload: IComment) => {
         commentorType:
             user.role == USER_ROLE.creator ? 'Creator' : 'NormalUser',
         likers: [],
+        podcast: comment.podcast,
     };
     const result = await Comment.create(replyData);
     return result;
 };
 
-const CommentServices = { createComment, createReply };
+const updateComment = async (
+    user: JwtPayload,
+    id: string,
+    payload: Partial<IComment>
+) => {
+    const result = await Comment.findOneAndUpdate(
+        { _id: id, commentor: user.profileId },
+        payload,
+        { new: true, runValidators: true }
+    );
+    if (!result) {
+        throw new AppError(
+            404,
+            'Comment not found or you are not authorized to update this comment'
+        );
+    }
+    return result;
+};
+
+const deleteComment = async (profileId: string, id: string) => {
+    const result = await Comment.findOneAndDelete({
+        _id: id,
+        commentor: profileId,
+    });
+    if (!result) {
+        throw new AppError(
+            404,
+            'Comment not found or you are not authorized to update this comment'
+        );
+    }
+    return result;
+};
+
+const CommentServices = {
+    createComment,
+    createReply,
+    updateComment,
+    deleteComment,
+};
 export default CommentServices;
