@@ -1,24 +1,39 @@
-import httpStatus from "http-status";
-import catchAsync from "../../utilities/catchasync";
-import sendResponse from "../../utilities/sendResponse";
-import bookmarkServices from "./bookmark.service";
+import httpStatus from 'http-status';
+import catchAsync from '../../utilities/catchasync';
+import sendResponse from '../../utilities/sendResponse';
+import BookmarkService from './bookmark.service';
 
-const updateUserProfile = catchAsync(async (req, res) => {
-    const { files } = req;
-    if (files && typeof files === "object" && "profile_image" in files) {
-        req.body.profile_image = files["profile_image"][0].path;
-    }
-    const result = await bookmarkServices.updateUserProfile(
+const productBookmarkAddDelete = catchAsync(async (req, res) => {
+    const result = await BookmarkService.bookmarkAddDelete(
         req.user.profileId,
-        req.body
+        req.params.id
     );
     sendResponse(res, {
-        statusCode: httpStatus.OK,
+        statusCode: httpStatus.CREATED,
         success: true,
-        message: "Profile updated successfully",
+        message: result
+            ? 'Bookmark added successfully'
+            : 'Bookmark deleted successfully',
+        data: result,
+    });
+});
+// get my bookmark
+const getMyBookmark = catchAsync(async (req, res) => {
+    const result = await BookmarkService.getMyBookmarkFromDB(
+        req?.user?.profileId
+    );
+
+    sendResponse(res, {
+        statusCode: 201,
+        success: true,
+        message: 'Bookmark retrieved successfully',
         data: result,
     });
 });
 
-const BookmarkController = { updateUserProfile };
+const BookmarkController = {
+    productBookmarkAddDelete,
+    getMyBookmark,
+};
+
 export default BookmarkController;

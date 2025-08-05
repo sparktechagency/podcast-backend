@@ -1,25 +1,19 @@
-import express from "express";
-import auth from "../../middlewares/auth";
-import { USER_ROLE } from "../user/user.constant";
-import validateRequest from "../../middlewares/validateRequest";
-import bookmarkValidations from "./bookmark.validation";
-import bookmarkController from "./bookmark.controller";
-import { uploadFile } from "../../helper/fileUploader";
+import express from 'express';
+import { USER_ROLE } from '../user/user.constant';
+import auth from '../../middlewares/auth';
+import BookmarkController from './bookmark.controller';
 
 const router = express.Router();
 
-router.patch(
-    "/update-profile",
+router.post(
+    '/add-delete-bookmark/:id',
     auth(USER_ROLE.user),
-    uploadFile(),
-    (req, res, next) => {
-        if (req.body.data) {
-            req.body = JSON.parse(req.body.data);
-        }
-        next();
-    },
-    validateRequest(bookmarkValidations.updateBookmarkData),
-    bookmarkController.updateUserProfile
+    BookmarkController.productBookmarkAddDelete
+);
+router.get(
+    '/my-bookmarks',
+    auth(USER_ROLE.user),
+    BookmarkController.getMyBookmark
 );
 
 export const bookmarkRoutes = router;

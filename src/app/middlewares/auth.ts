@@ -36,11 +36,11 @@ const auth = (...requiredRoles: TUserRole[]) => {
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { id, role, iat } = decoded;
-            if (!decoded) {
-                throw new AppError(httpStatus.UNAUTHORIZED, 'Token is expired');
-            }
+
             // get the user if that here ---------
-            const user = await User.findById(id);
+            const user = await User.findById(id).select(
+                '+isDeleted +isBlocked +isVerified +passwordChangedAt +role'
+            );
             if (!user) {
                 throw new AppError(
                     httpStatus.NOT_FOUND,

@@ -6,24 +6,26 @@ const getWatchedHistory = async (
     query: Record<string, unknown>
 ) => {
     const resultQuery = new QueryBuilder(
-        WatchHistory.find({ user: profileId }).populate({
-            path: 'podcast',
-            select: 'title name coverImage description duration audio_url video_url creator subCategory category address location tags totalView createdAt',
-            populate: [
-                {
-                    path: 'category',
-                    select: 'name',
-                },
-                {
-                    path: 'subCategory',
-                    select: 'name',
-                },
-                {
-                    path: 'creator',
-                    select: 'name profile_image',
-                },
-            ],
-        }),
+        WatchHistory.find({ user: profileId })
+            .lean()
+            .populate({
+                path: 'podcast',
+                select: 'title name coverImage description duration audio_url video_url creator subCategory category address location tags totalView createdAt',
+                populate: [
+                    {
+                        path: 'category',
+                        select: 'name',
+                    },
+                    {
+                        path: 'subCategory',
+                        select: 'name',
+                    },
+                    {
+                        path: 'creator',
+                        select: 'name profile_image',
+                    },
+                ],
+            }),
         query
     )
         .search(['name', 'title', 'description'])

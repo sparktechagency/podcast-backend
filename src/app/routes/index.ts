@@ -15,6 +15,7 @@ import { categoryRoutes } from '../modules/category/category.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 import { creatorRoutes } from '../modules/creator/creator.routes';
 import { watchHistoryRoutes } from '../modules/watchHistory/watchHistory.routes';
+import { bookmarkRoutes } from '../modules/bookmark/bookmark.routes';
 
 const router = Router();
 
@@ -84,6 +85,10 @@ const moduleRoutes = [
     {
         path: '/watch-history',
         router: watchHistoryRoutes,
+    },
+    {
+        path: '/bookmark',
+        router: bookmarkRoutes,
     },
 ];
 

@@ -33,9 +33,9 @@ const getMyBookmarkFromDB = async (profileId: string) => {
     return result;
 };
 
-const productBookmarkServices = {
+const BookmarkService = {
     bookmarkAddDelete,
     getMyBookmarkFromDB,
 };
 
-export default productBookmarkServices;
+export default BookmarkService;
