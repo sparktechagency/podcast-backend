@@ -58,6 +58,10 @@ router.post(
     auth(USER_ROLE.user, USER_ROLE.creator),
     podcastController.viewPodcast
 );
+router.get(
+    '/subcategory-with-podcasts/:id',
+    podcastController.getPodcastForSubcategories
+);
 
 router.get('/get-home-data', podcastController.getHomeData);
 export const podcastRoutes = router;

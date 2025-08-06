@@ -108,6 +108,17 @@ const getHomeData = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getPodcastForSubcategories = catchAsync(async (req, res) => {
+    const result = await podcastService.getPodcastForSubcategories(
+        req.params.id
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Subcategory with podcasts successfully',
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -118,6 +129,7 @@ const podcastController = {
     getHomeData,
     viewPodcast,
     getPodcastFeedForUser,
+    getPodcastForSubcategories,
 };
 
 export default podcastController;

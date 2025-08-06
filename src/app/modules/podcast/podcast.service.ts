@@ -13,6 +13,7 @@ import { CACHE_TTL_SECONDS } from '../../constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
 import Album from '../album/album.model';
 import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
+import mongoose from 'mongoose';
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
@@ -582,6 +583,174 @@ const getHomeData = async () => {
     };
 };
 
+// const getPodcastForSubcategories = async (categoryId: string) => {
+//     const result = await SubCategory.aggregate([
+//         {
+//             $match: {
+//                 category: new mongoose.Types.ObjectId(categoryId),
+//                 isDeleted: false,
+//             },
+//         },
+//         {
+//             $lookup: {
+//                 from: 'podcasts',
+//                 let: { subCatId: '$_id', categoryId: '$category' },
+//                 pipeline: [
+//                     {
+//                         $match: {
+//                             $expr: {
+//                                 $and: [
+//                                     { $eq: ['$subCategory', '$$subCatId'] },
+//                                     { $eq: ['$category', '$$categoryId'] },
+//                                 ],
+//                             },
+//                         },
+//                     },
+//                     {
+//                         $sort: { createdAt: -1 },
+//                     },
+//                     {
+//                         $limit: 10,
+//                     },
+//                     {
+//                         $project: {
+//                             title: 1,
+//                             coverImage: 1,
+//                             video_url: 1,
+//                             audio_url: 1,
+//                             totalView: 1,
+//                             duration: 1,
+//                             createdAt: 1,
+//                         },
+//                     },
+//                 ],
+//                 as: 'podcasts',
+//             },
+//         },
+//         {
+//             $project: {
+//                 _id: 1,
+//                 name: 1,
+//                 image: 1,
+//                 podcasts: 1,
+//             },
+//         },
+//     ]);
+
+//     return result;
+// };
+const getPodcastForSubcategories = async (categoryId: string) => {
+    const cacheKey = `subcat-podcast:${categoryId}`;
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+
+    console.log('Fetching from DB for subcategories podcasts');
+
+    const result = await SubCategory.aggregate([
+        {
+            $match: {
+                category: new mongoose.Types.ObjectId(categoryId),
+                isDeleted: false,
+            },
+        },
+        {
+            $lookup: {
+                from: 'podcasts',
+                let: {
+                    subCatId: '$_id',
+                    categoryId: '$category',
+                },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$subCategory', '$$subCatId'] },
+                                    { $eq: ['$category', '$$categoryId'] },
+                                ],
+                            },
+                        },
+                    },
+                    { $sort: { createdAt: -1 } },
+                    { $limit: 10 },
+                    // Lookup for creator
+                    {
+                        $lookup: {
+                            from: 'creators',
+                            localField: 'creator',
+                            foreignField: '_id',
+                            as: 'creator',
+                        },
+                    },
+                    {
+                        $unwind: {
+                            path: '$creator',
+                            preserveNullAndEmptyArrays: true,
+                        },
+                    },
+                    // Lookup for category
+                    {
+                        $lookup: {
+                            from: 'categories',
+                            localField: 'category',
+                            foreignField: '_id',
+                            as: 'category',
+                        },
+                    },
+                    {
+                        $unwind: '$category',
+                    },
+                    // Lookup for subCategory
+                    {
+                        $lookup: {
+                            from: 'subcategories',
+                            localField: 'subCategory',
+                            foreignField: '_id',
+                            as: 'subCategory',
+                        },
+                    },
+                    {
+                        $unwind: '$subCategory',
+                    },
+                    {
+                        $project: {
+                            title: 1,
+                            coverImage: 1,
+                            video_url: 1,
+                            audio_url: 1,
+                            duration: 1,
+                            createdAt: 1,
+                            location: 1,
+                            'creator._id': 1,
+                            'creator.name': 1,
+                            'category._id': 1,
+                            'category.name': 1,
+                            'subCategory._id': 1,
+                            'subCategory.name': 1,
+                        },
+                    },
+                ],
+                as: 'podcasts',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                image: 1,
+                podcasts: 1,
+            },
+        },
+    ]);
+
+    // 3. Cache result in Redis (expire in 5 minutes)
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
+
+    return result;
+};
 const podcastService = {
     createPodcastIntoDB,
     updatePodcastIntoDB,
@@ -591,6 +760,7 @@ const podcastService = {
     countPodcastView,
     getHomeData,
     getPodcastFeedForUser,
+    getPodcastForSubcategories,
 };
 
 export default podcastService;
