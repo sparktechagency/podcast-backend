@@ -397,6 +397,9 @@ const getPodcastFeedForUser = async (
     if (searchTerm) {
         queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
     }
+    if (query.reels) {
+        queryData.$and.push({ duration: { $lte: 120 } });
+    }
 
     // Personalization only if no filters/search applied
     if (!categoryId && !subCategoryId && !searchTerm) {
@@ -413,9 +416,12 @@ const getPodcastFeedForUser = async (
         delete queryData.$and;
     }
 
+    // sort
+    const sortField = query.popular ? 'totalView' : 'createdAt';
+
     // Step 5: Query MongoDB
     const podcasts: any = await Podcast.find(queryData)
-        .sort({ createdAt: -1 })
+        .sort({ [sortField]: -1 })
         .limit(limit)
         .select(
             'title coverImage video_url audio_url category subCategory location duration createdAt'
