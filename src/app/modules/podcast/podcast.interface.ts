@@ -6,8 +6,7 @@ export interface IPodcast {
     subCategory: Types.ObjectId;
     name: string;
     coverImage: string;
-    video_url: string;
-    audio_url: string;
+    podcast_url?: string;
     title: string;
     description: string;
     location: {

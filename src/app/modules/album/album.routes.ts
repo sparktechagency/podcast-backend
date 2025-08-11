@@ -30,7 +30,12 @@ router.get(
 
 router.get(
     '/get-single/:albumId',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
+    auth(
+        USER_ROLE.superAdmin,
+        USER_ROLE.admin,
+        USER_ROLE.user,
+        USER_ROLE.creator
+    ),
     AlbumController.getAlbumById
 );
 

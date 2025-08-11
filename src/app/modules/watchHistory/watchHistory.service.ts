@@ -10,7 +10,7 @@ const getWatchedHistory = async (
             .lean()
             .populate({
                 path: 'podcast',
-                select: 'title name coverImage description duration audio_url video_url creator subCategory category address location tags totalView createdAt',
+                select: 'title name coverImage description duration podcast_url creator subCategory category address location tags totalView createdAt',
                 populate: [
                     {
                         path: 'category',

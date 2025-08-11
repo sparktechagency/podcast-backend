@@ -36,7 +36,7 @@ const getMyBookmarkFromDB = async (
     const resultQuery = new QueryBuilder(
         Bookmark.find({ user: profileId }).populate({
             path: 'podcast',
-            select: 'title duration creator subCategory category totalView createdAt',
+            select: 'title duration coverImage creator subCategory category totalView createdAt',
             populate: [
                 {
                     path: 'category',

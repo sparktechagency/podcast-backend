@@ -30,11 +30,11 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
         );
     }
 
-    if (payload.audio_url) {
-        payload.audio_url = getCloudFrontUrl(payload.audio_url);
+    if (payload.podcast_url) {
+        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
     }
-    if (payload.video_url) {
-        payload.audio_url = getCloudFrontUrl(payload.video_url);
+    if (payload.podcast_url) {
+        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
     }
     if (payload.coverImage) {
         payload.coverImage = getCloudFrontUrl(payload.coverImage);
@@ -58,13 +58,13 @@ const updatePodcastIntoDB = async (
         runValidators: true,
     });
 
-    if (payload.audio_url) {
-        payload.audio_url = getCloudFrontUrl(payload.audio_url);
-        deleteFileFromS3(podcast?.audio_url);
+    if (payload.podcast_url) {
+        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        deleteFileFromS3(podcast?.podcast_url as string);
     }
-    if (payload.video_url) {
-        payload.audio_url = getCloudFrontUrl(payload.video_url);
-        deleteFileFromS3(podcast?.video_url);
+    if (payload.podcast_url) {
+        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        deleteFileFromS3(podcast?.podcast_url as string);
     }
 
     if (payload.coverImage && podcast?.coverImage) {
@@ -915,7 +915,7 @@ const getPodcastFeedForUser = async (
         .sort({ [sortField]: -1 })
         .limit(limit)
         .select(
-            'title coverImage video_url audio_url category subCategory location duration createdAt creator'
+            'title coverImage podcast_url category subCategory location duration createdAt creator'
         )
         .populate('category', 'name') // only name & _id
         .populate('subCategory', 'name') // only name & _id
@@ -926,7 +926,7 @@ const getPodcastFeedForUser = async (
     if (query.firstPodcastId) {
         const firstPodcast = await Podcast.findById(query.firstPodcastId)
             .select(
-                'title coverImage video_url audio_url category subCategory location duration createdAt creator'
+                'title coverImage podcast_url category subCategory location duration createdAt creator'
             )
             .populate('category', 'name')
             .populate('subCategory', 'name')
@@ -993,20 +993,26 @@ const deletePodcastFromDB = async (userId: string, id: string) => {
     if (!podcast) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
     }
-    if (podcast.audio_url) {
-        podcast.audio_url = getCloudFrontUrl(podcast.audio_url);
-        deleteFileFromS3(podcast?.audio_url);
+    if (podcast.podcast_url) {
+        podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
+        deleteFileFromS3(podcast?.podcast_url);
     }
-    if (podcast.video_url) {
-        podcast.audio_url = getCloudFrontUrl(podcast.video_url);
-        deleteFileFromS3(podcast?.video_url);
+    if (podcast.podcast_url) {
+        podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
+        deleteFileFromS3(podcast?.podcast_url);
     }
     return await Podcast.findByIdAndDelete(id);
 };
 
 const countPodcastView = async (profileId: string, podcastId: string) => {
     await Podcast.findByIdAndUpdate(podcastId, { $inc: { totalView: 1 } });
-    await WatchHistory.create({ user: profileId, podcast: podcastId });
+
+    await WatchHistory.findOneAndUpdate(
+        { user: profileId, podcast: podcastId },
+        { $set: { updatedAt: new Date() } },
+        { upsert: true, new: true }
+    );
+
     return null;
 };
 
@@ -1237,8 +1243,7 @@ const getPodcastForSubcategories = async (categoryId: string) => {
                         $project: {
                             title: 1,
                             coverImage: 1,
-                            video_url: 1,
-                            audio_url: 1,
+                            podcast_url: 1,
                             duration: 1,
                             createdAt: 1,
                             location: 1,

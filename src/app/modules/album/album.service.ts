@@ -25,7 +25,7 @@ const getAllAlbums = async (query: Record<string, unknown>) => {
 const getAlbumById = async (albumId: string) => {
     const album = await Album.findById(albumId).populate({
         path: 'podcasts',
-        select: 'title name coverImage description, duration audio_url video_url creator subCategory category address location tags totalView createdAt',
+        select: 'title name coverImage description, duration podcast_url creator subCategory category address location tags totalView createdAt',
         populate: [
             {
                 path: 'category',
@@ -37,7 +37,7 @@ const getAlbumById = async (albumId: string) => {
             },
             {
                 path: 'creator',
-                select: 'name profile_image', // optional, in case you want creator details too
+                select: 'name profile_image',
             },
         ],
     });
