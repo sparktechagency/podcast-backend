@@ -9,7 +9,6 @@ import Category from '../category/category.model';
 import SubCategory from '../subCategory/subCategory.model';
 import redis from '../../utilities/redisClient';
 import { createCacheKey } from '../../helper/createCacheKey';
-import crypto from 'crypto';
 
 import { CACHE_TTL_SECONDS } from '../../constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
