@@ -24,7 +24,12 @@ router.patch(
 
 router.get(
     '/get-all-creators',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin),
+    auth(
+        USER_ROLE.superAdmin,
+        USER_ROLE.admin,
+        USER_ROLE.creator,
+        USER_ROLE.user
+    ),
     CreatorController.getAllCreators
 );
 
