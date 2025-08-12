@@ -24,7 +24,12 @@ router.post(
 
 router.get(
     '/all-albums',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
+    auth(
+        USER_ROLE.superAdmin,
+        USER_ROLE.admin,
+        USER_ROLE.user,
+        USER_ROLE.creator
+    ),
     AlbumController.getAllAlbums
 );
 

@@ -8,7 +8,7 @@ import commentController from './comment.controller';
 const router = express.Router();
 
 router.post(
-    '/create-comment',
+    '/create',
     auth(USER_ROLE.user, USER_ROLE.creator),
     validateRequest(commentValidations.createCommentSchema),
     commentController.createComment
@@ -41,6 +41,12 @@ router.get(
     '/get-podcast-comments/:id',
     auth(USER_ROLE.user, USER_ROLE.creator),
     commentController.getPodcastComments
+);
+
+router.get(
+    '/get-replies/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    commentController.getReplies
 );
 
 export const commentRoutes = router;

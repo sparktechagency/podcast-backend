@@ -20,6 +20,7 @@ const createComment = async (user: JwtPayload, payload: Partial<IComment>) => {
 };
 
 const createReply = async (user: JwtPayload, payload: IComment) => {
+    console.log('Creating reply with payload:');
     const comment = await Comment.findById(payload.parent);
     if (!comment) {
         throw new AppError(404, 'Parent comment not found');
@@ -105,6 +106,7 @@ const likeUnlikeComment = async (commentId: string, user: JwtPayload) => {
 };
 
 const getPodcastComments = async (
+    profileId: string,
     podcastId: string,
     query: Record<string, any>
 ) => {
@@ -121,15 +123,36 @@ const getPodcastComments = async (
         },
         {
             $lookup: {
-                from: 'users',
+                from: 'normalusers',
                 localField: 'commentor',
                 foreignField: '_id',
                 as: 'commentorDetails',
             },
         },
         {
-            $unwind: '$commentorDetails',
+            $lookup: {
+                from: 'creators',
+                localField: 'commentor',
+                foreignField: '_id',
+                as: 'creatorDetails',
+            },
         },
+        {
+            $addFields: {
+                commentorDetails: {
+                    $cond: {
+                        if: { $eq: ['$commentorType', 'NormalUser'] },
+                        then: '$commentorDetails',
+                        else: '$creatorDetails',
+                    },
+                },
+                isMyComment: {
+                    $eq: ['$commentor', new mongoose.Types.ObjectId(profileId)],
+                },
+                totalLike: { $size: '$likers' },
+            },
+        },
+        { $unwind: '$commentorDetails' },
         {
             $lookup: {
                 from: 'comments',
@@ -148,12 +171,114 @@ const getPodcastComments = async (
             $project: {
                 _id: 1,
                 text: 1,
-                likers: 1,
                 createdAt: 1,
                 updatedAt: 1,
                 commentorName: '$commentorDetails.name',
                 commentorProfileImage: '$commentorDetails.profile_image',
                 totalReplies: 1,
+                totalLike: 1,
+                isMyComment: 1,
+            },
+        },
+        {
+            $sort: { createdAt: -1 },
+        },
+        {
+            $facet: {
+                result: [{ $skip: skip }, { $limit: limit }],
+                totalCount: [{ $count: 'total' }],
+            },
+        },
+    ]);
+
+    const result = comments[0]?.result || [];
+    const total = comments[0]?.totalCount[0]?.total || 0;
+    const totalPage = Math.ceil(total / limit);
+
+    const response = {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage,
+        },
+        result,
+    };
+
+    return response;
+};
+const getReplies = async (
+    profileId: string,
+    parentId: string,
+    query: Record<string, any>
+) => {
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const comments = await Comment.aggregate([
+        {
+            $match: {
+                parent: new mongoose.Types.ObjectId(parentId),
+            },
+        },
+        {
+            $lookup: {
+                from: 'normalusers',
+                localField: 'commentor',
+                foreignField: '_id',
+                as: 'commentorDetails',
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'commentor',
+                foreignField: '_id',
+                as: 'creatorDetails',
+            },
+        },
+        {
+            $addFields: {
+                commentorDetails: {
+                    $cond: {
+                        if: { $eq: ['$commentorType', 'NormalUser'] },
+                        then: '$commentorDetails',
+                        else: '$creatorDetails',
+                    },
+                },
+                isMyComment: {
+                    $eq: ['$commentor', new mongoose.Types.ObjectId(profileId)],
+                },
+                totalLike: { $size: '$likers' },
+            },
+        },
+        { $unwind: '$commentorDetails' },
+        {
+            $lookup: {
+                from: 'comments',
+                localField: '_id',
+                foreignField: 'parent',
+                as: 'replies',
+            },
+        },
+
+        {
+            $addFields: {
+                totalReplies: { $size: '$replies' },
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                text: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                commentorName: '$commentorDetails.name',
+                commentorProfileImage: '$commentorDetails.profile_image',
+                totalReplies: 1,
+                isMyComment: 1,
+                totalLike: 1,
             },
         },
         {
@@ -191,5 +316,6 @@ const CommentServices = {
     deleteComment,
     likeUnlikeComment,
     getPodcastComments,
+    getReplies,
 };
 export default CommentServices;

@@ -14,7 +14,7 @@ const createComment = catchAsync(async (req, res) => {
 });
 
 const createReply = catchAsync(async (req, res) => {
-    const result = await commentServices.createComment(req.user, req.body);
+    const result = await commentServices.createReply(req.user, req.body);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -61,6 +61,7 @@ const likeUnlikeComment = catchAsync(async (req, res) => {
 });
 const getPodcastComments = catchAsync(async (req, res) => {
     const result = await commentServices.getPodcastComments(
+        req.user.profileId,
         req.params.id,
         req.query
     );
@@ -68,6 +69,19 @@ const getPodcastComments = catchAsync(async (req, res) => {
         statusCode: httpStatus.OK,
         success: true,
         message: 'Podcast Comment retrieved  successfully',
+        data: result,
+    });
+});
+const getReplies = catchAsync(async (req, res) => {
+    const result = await commentServices.getReplies(
+        req.user.profileId,
+        req.params.id,
+        req.query
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Replies retrieved  successfully',
         data: result,
     });
 });
@@ -79,5 +93,6 @@ const CommentController = {
     deleteComment,
     getPodcastComments,
     likeUnlikeComment,
+    getReplies,
 };
 export default CommentController;

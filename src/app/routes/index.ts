@@ -16,6 +16,7 @@ import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 import { creatorRoutes } from '../modules/creator/creator.routes';
 import { watchHistoryRoutes } from '../modules/watchHistory/watchHistory.routes';
 import { bookmarkRoutes } from '../modules/bookmark/bookmark.routes';
+import { commentRoutes } from '../modules/comment/comment.routes';
 
 const router = Router();
 
@@ -89,6 +90,10 @@ const moduleRoutes = [
     {
         path: '/bookmark',
         router: bookmarkRoutes,
+    },
+    {
+        path: '/comment',
+        router: commentRoutes,
     },
 ];
 
