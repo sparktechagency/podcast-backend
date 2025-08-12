@@ -59,12 +59,25 @@ const likeUnlikeComment = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getPodcastComments = catchAsync(async (req, res) => {
+    const result = await commentServices.getPodcastComments(
+        req.params.id,
+        req.query
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcast Comment retrieved  successfully',
+        data: result,
+    });
+});
 
 const CommentController = {
     createComment,
     createReply,
     updateComment,
     deleteComment,
+    getPodcastComments,
     likeUnlikeComment,
 };
 export default CommentController;

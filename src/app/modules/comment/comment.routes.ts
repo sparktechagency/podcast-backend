@@ -37,4 +37,10 @@ router.post(
     commentController.likeUnlikeComment
 );
 
+router.get(
+    '/get-podcast-comments/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    commentController.getPodcastComments
+);
+
 export const commentRoutes = router;

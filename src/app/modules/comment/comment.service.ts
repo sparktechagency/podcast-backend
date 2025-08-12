@@ -104,11 +104,92 @@ const likeUnlikeComment = async (commentId: string, user: JwtPayload) => {
     };
 };
 
+const getPodcastComments = async (
+    podcastId: string,
+    query: Record<string, any>
+) => {
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const comments = await Comment.aggregate([
+        {
+            $match: {
+                podcast: new mongoose.Types.ObjectId(podcastId),
+                parent: null,
+            },
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'commentor',
+                foreignField: '_id',
+                as: 'commentorDetails',
+            },
+        },
+        {
+            $unwind: '$commentorDetails',
+        },
+        {
+            $lookup: {
+                from: 'comments',
+                localField: '_id',
+                foreignField: 'parent',
+                as: 'replies',
+            },
+        },
+
+        {
+            $addFields: {
+                totalReplies: { $size: '$replies' },
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                text: 1,
+                likers: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                commentorName: '$commentorDetails.name',
+                commentorProfileImage: '$commentorDetails.profile_image',
+                totalReplies: 1,
+            },
+        },
+        {
+            $sort: { createdAt: -1 },
+        },
+        {
+            $facet: {
+                result: [{ $skip: skip }, { $limit: limit }],
+                totalCount: [{ $count: 'total' }],
+            },
+        },
+    ]);
+
+    const result = comments[0]?.result || [];
+    const total = comments[0]?.totalCount[0]?.total || 0;
+    const totalPage = Math.ceil(total / limit);
+
+    const response = {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage,
+        },
+        result,
+    };
+
+    return response;
+};
+
 const CommentServices = {
     createComment,
     createReply,
     updateComment,
     deleteComment,
     likeUnlikeComment,
+    getPodcastComments,
 };
 export default CommentServices;
