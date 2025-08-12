@@ -4,6 +4,8 @@ import Comment from './comment.model';
 import { JwtPayload } from 'jsonwebtoken';
 import { USER_ROLE } from '../user/user.constant';
 import AppError from '../../error/appError';
+import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 
 const createComment = async (user: JwtPayload, payload: Partial<IComment>) => {
     const commentData: any = {
@@ -67,10 +69,46 @@ const deleteComment = async (profileId: string, id: string) => {
     return result;
 };
 
+// like unlike comment
+const likeUnlikeComment = async (commentId: string, user: JwtPayload) => {
+    const comment = await Comment.findById(commentId).select('likers');
+    if (!comment) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(user.profileId);
+    const likerType = user.role == USER_ROLE.creator ? 'Creator' : 'NormalUser';
+    const alreadyLiked = comment.likers.some(
+        (l: any) => l.likerId.equals(userObjectId) && l.likerType === likerType
+    );
+
+    let updatedComment: any;
+    if (alreadyLiked) {
+        updatedComment = await Comment.findByIdAndUpdate(
+            commentId,
+            { $pull: { likers: { likerId: userObjectId, likerType } } },
+            { new: true }
+        ).select('likers');
+    } else {
+        updatedComment = await Comment.findByIdAndUpdate(
+            commentId,
+            { $push: { likers: { likerId: userObjectId, likerType } } },
+            { new: true }
+        ).select('likers');
+    }
+
+    return {
+        commentId,
+        liked: !alreadyLiked,
+        totalLikes: updatedComment?.likers.length ?? 0,
+    };
+};
+
 const CommentServices = {
     createComment,
     createReply,
     updateComment,
     deleteComment,
+    likeUnlikeComment,
 };
 export default CommentServices;

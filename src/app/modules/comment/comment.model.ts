@@ -22,12 +22,16 @@ const commentSchema = new Schema<IComment>(
             type: String,
             required: true,
         },
-        likers: [{ type: Schema.Types.ObjectId, refPath: 'likerType' }],
-        likerType: {
-            type: String,
-            enum: ['NormalUser', 'Creator'],
-            required: true,
-        },
+        likers: [
+            {
+                likerId: { type: Schema.Types.ObjectId, required: true },
+                likerType: {
+                    type: String,
+                    enum: ['NormalUser', 'Creator'],
+                    required: true,
+                },
+            },
+        ],
         parent: {
             type: Schema.Types.ObjectId,
             ref: 'Comment',

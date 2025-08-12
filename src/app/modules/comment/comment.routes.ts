@@ -31,4 +31,10 @@ router.delete(
     commentController.deleteComment
 );
 
+router.post(
+    '/like-unlike-comment/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    commentController.likeUnlikeComment
+);
+
 export const commentRoutes = router;

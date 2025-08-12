@@ -47,11 +47,24 @@ const deleteComment = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const likeUnlikeComment = catchAsync(async (req, res) => {
+    const result = await commentServices.likeUnlikeComment(
+        req.params.id,
+        req.user
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Comment  successfully',
+        data: result,
+    });
+});
 
 const CommentController = {
     createComment,
     createReply,
     updateComment,
     deleteComment,
+    likeUnlikeComment,
 };
 export default CommentController;

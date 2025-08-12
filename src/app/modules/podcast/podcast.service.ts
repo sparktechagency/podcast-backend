@@ -84,7 +84,25 @@ const getAllPodcasts = async (query: Record<string, unknown>) => {
         return JSON.parse(cachedData);
     }
 
-    const resultQuery = new QueryBuilder(Podcast.find(), query)
+    const filterQuery: any = {};
+    if (query.reels) {
+        filterQuery.duration = { $lte: 60 };
+        delete query.reels;
+    }
+
+    if (query.popular) {
+        query.sort = '-totalView';
+        delete query.popular;
+    }
+
+    const resultQuery = new QueryBuilder(
+        Podcast.find({ ...filterQuery }).populate([
+            { path: 'creator', select: 'name profile_image' },
+            { path: 'category', select: 'name' },
+            { path: 'subCategory', select: 'name' },
+        ]),
+        query
+    )
         .search(['name', 'title', 'description'])
         .fields()
         .filter()
@@ -895,7 +913,7 @@ const getPodcastFeedForUser = async (
     if (subCategoryId) queryData.$and.push({ subCategory: subCategoryId });
     if (searchTerm)
         queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
-    if (query.reels) queryData.$and.push({ duration: { $lte: 120 } });
+    if (query.reels) queryData.$and.push({ duration: { $lte: 60 } });
 
     if (!categoryId && !subCategoryId && !searchTerm) {
         const ors = [];
