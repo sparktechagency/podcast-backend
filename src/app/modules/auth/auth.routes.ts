@@ -15,13 +15,23 @@ router.post(
 
 router.post(
     '/change-password',
-    auth(USER_ROLE.user, USER_ROLE.admin, USER_ROLE.superAdmin),
+    auth(
+        USER_ROLE.user,
+        USER_ROLE.admin,
+        USER_ROLE.superAdmin,
+        USER_ROLE.creator
+    ),
     validateRequest(authValidations.changePasswordValidationSchema),
     authControllers.changePassword
 );
 router.post(
     '/refresh-token',
-    auth(USER_ROLE.user, USER_ROLE.admin, USER_ROLE.superAdmin),
+    auth(
+        USER_ROLE.user,
+        USER_ROLE.admin,
+        USER_ROLE.superAdmin,
+        USER_ROLE.creator
+    ),
     validateRequest(authValidations.refreshTokenValidationSchema),
     authControllers.refreshToken
 );

@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post(
     '/create',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
         if (req.body.data) {
@@ -32,19 +32,24 @@ router.get(
 
 router.get(
     '/my-playlists',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     PodcastPlaylistController.getMyPlaylists
 );
 
 router.get(
     '/get-single/:playlistId',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
+    auth(
+        USER_ROLE.superAdmin,
+        USER_ROLE.admin,
+        USER_ROLE.user,
+        USER_ROLE.creator
+    ),
     PodcastPlaylistController.getPlaylistById
 );
 
 router.patch(
     '/update/:playlistId',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
         if (req.body.data) {
@@ -60,7 +65,12 @@ router.patch(
 
 router.delete(
     '/delete/:playlistId',
-    auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
+    auth(
+        USER_ROLE.superAdmin,
+        USER_ROLE.admin,
+        USER_ROLE.user,
+        USER_ROLE.creator
+    ),
     PodcastPlaylistController.deletePlaylist
 );
 

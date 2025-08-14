@@ -52,13 +52,41 @@ const getMyPlaylists = async (
     return { meta, result };
 };
 
+// const getPlaylistById = async (playlistId: string) => {
+//     const playlist = await PodcastPlaylist.findById(playlistId)
+//         .populate('user', 'name profile_image')
+//         .populate('podcasts');
+//     if (!playlist) {
+//         throw new AppError(httpStatus.NOT_FOUND, 'Podcast playlist not found');
+//     }
+//     return playlist;
+// };
+
 const getPlaylistById = async (playlistId: string) => {
     const playlist = await PodcastPlaylist.findById(playlistId)
         .populate('user', 'name profile_image')
-        .populate('podcasts');
+        .populate({
+            path: 'podcasts',
+            populate: [
+                {
+                    path: 'creator',
+                    select: 'name profile_image',
+                },
+                {
+                    path: 'category',
+                    select: 'name',
+                },
+                {
+                    path: 'subCategory',
+                    select: 'name',
+                },
+            ],
+        });
+
     if (!playlist) {
         throw new AppError(httpStatus.NOT_FOUND, 'Podcast playlist not found');
     }
+
     return playlist;
 };
 
