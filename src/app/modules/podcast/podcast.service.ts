@@ -9,7 +9,6 @@ import Category from '../category/category.model';
 import SubCategory from '../subCategory/subCategory.model';
 import redis from '../../utilities/redisClient';
 import { createCacheKey } from '../../helper/createCacheKey';
-
 import { CACHE_TTL_SECONDS } from '../../constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
 import Album from '../album/album.model';
@@ -96,6 +95,59 @@ const getAllPodcasts = async (query: Record<string, unknown>) => {
 
     const resultQuery = new QueryBuilder(
         Podcast.find({ ...filterQuery }).populate([
+            { path: 'creator', select: 'name profile_image' },
+            { path: 'category', select: 'name' },
+            { path: 'subCategory', select: 'name' },
+        ]),
+        query
+    )
+        .search(['name', 'title', 'description'])
+        .fields()
+        .filter()
+        .paginate()
+        .sort();
+
+    const result = await resultQuery.modelQuery;
+    const meta = await resultQuery.countTotal();
+    const dataToCache = { meta, result };
+
+    // 3. Store result in Redis cache with TTL
+    await redis.set(
+        cacheKey,
+        JSON.stringify(dataToCache),
+        'EX',
+        CACHE_TTL_SECONDS
+    );
+
+    return dataToCache;
+};
+
+const getMyPodcasts = async (
+    profileId: string,
+    query: Record<string, unknown>
+) => {
+    const cacheKey = `user:${profileId}:${createCacheKey(query)}`;
+
+    // 1. Try to get cached data from Redis
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        // Cache hit - parse and return
+        return JSON.parse(cachedData);
+    }
+
+    const filterQuery: any = {};
+    if (query.reels) {
+        filterQuery.duration = { $lte: 60 };
+        delete query.reels;
+    }
+
+    if (query.popular) {
+        query.sort = '-totalView';
+        delete query.popular;
+    }
+
+    const resultQuery = new QueryBuilder(
+        Podcast.find({ ...filterQuery, creator: profileId }).populate([
             { path: 'creator', select: 'name profile_image' },
             { path: 'category', select: 'name' },
             { path: 'subCategory', select: 'name' },
@@ -1301,6 +1353,7 @@ const podcastService = {
     getHomeData,
     getPodcastFeedForUser,
     getPodcastForSubcategories,
+    getMyPodcasts,
 };
 
 export default podcastService;

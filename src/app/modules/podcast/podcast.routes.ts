@@ -39,6 +39,11 @@ router.patch(
 
 router.get('/all', podcastController.getAllPodcasts);
 router.get(
+    '/my-podcasts',
+    auth(USER_ROLE.creator),
+    podcastController.getMyPodcasts
+);
+router.get(
     '/get-podcast-feed',
     auth(USER_ROLE.user, USER_ROLE.creator),
     podcastController.getPodcastFeedForUser
