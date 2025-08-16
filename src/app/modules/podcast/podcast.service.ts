@@ -897,7 +897,7 @@ const getPodcastFeedForUser = async (
     if (cachedLikedPods) {
         likedPods = JSON.parse(cachedLikedPods);
     } else {
-        likedPods = await Podcast.find({ liker: userId })
+        likedPods = await Podcast.find({ 'likers.user': userId })
             .select('category subCategory')
             .limit(50)
             .lean();
@@ -1011,22 +1011,38 @@ const getPodcastFeedForUser = async (
         }
     }
 
-    // Step 7: Add bookmark flag to each podcast
-    const podcastsWithBookmarkFlag = podcasts.map((podcast: any) => ({
+    // // Step 7: Add bookmark flag to each podcast
+    // const podcastsWithBookmarkFlag = podcasts.map((podcast: any) => ({
+    //     ...podcast,
+    //     isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
+    // }));
+
+    // // Step 8: Pagination cursor for next page
+    // const nextCursor =
+    //     podcastsWithBookmarkFlag.length === limit
+    //         ? podcastsWithBookmarkFlag[
+    //               podcastsWithBookmarkFlag.length - 1
+    //           ].createdAt.toISOString()
+    //         : null;
+
+    // Step 7: Add bookmark + like flag to each podcast
+    const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
+
+    const podcastsWithFlags = podcasts.map((podcast: any) => ({
         ...podcast,
         isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
+        isLike: likedPodcastIds.has(podcast._id.toString()),
     }));
 
     // Step 8: Pagination cursor for next page
     const nextCursor =
-        podcastsWithBookmarkFlag.length === limit
-            ? podcastsWithBookmarkFlag[
-                  podcastsWithBookmarkFlag.length - 1
+        podcastsWithFlags.length === limit
+            ? podcastsWithFlags[
+                  podcastsWithFlags.length - 1
               ].createdAt.toISOString()
             : null;
-
     const response = {
-        podcasts: podcastsWithBookmarkFlag,
+        podcasts: podcastsWithFlags,
         nextCursor,
         hasMore: Boolean(nextCursor),
     };
