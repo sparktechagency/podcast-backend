@@ -1159,6 +1159,21 @@ const getHomeData = async () => {
             },
             { $unwind: '$creatorInfo' },
             {
+                $lookup: {
+                    from: 'podcasts',
+                    localField: '_id',
+                    foreignField: 'creator',
+                    as: 'creatorPodcasts',
+                },
+            },
+            {
+                $addFields: {
+                    randomPodcast: {
+                        $arrayElemAt: [{ $sample: { size: 1 } }, 0],
+                    },
+                },
+            },
+            {
                 $project: {
                     _id: 0,
                     creatorId: '$_id',
@@ -1170,6 +1185,12 @@ const getHomeData = async () => {
                     phone: '$creatorInfo.phone',
                     location: '$creatorInfo.location',
                     donationLink: '$creatorInfo.donationLink',
+                    randomPodcast: {
+                        title: '$randomPodcast.title',
+                        description: '$randomPodcast.description',
+                        podcast_url: '$randomPodcast.podcast_url',
+                        coverImage: '$randomPodcast.coverImage',
+                    },
                 },
             },
         ]),
