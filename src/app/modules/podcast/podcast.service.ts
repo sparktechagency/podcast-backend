@@ -1168,8 +1168,16 @@ const getHomeData = async () => {
             },
             {
                 $addFields: {
-                    randomPodcast: {
-                        $arrayElemAt: [{ $sample: { size: 1 } }, 0],
+                    latestPodcast: {
+                        $arrayElemAt: [
+                            {
+                                $sortArray: {
+                                    input: '$creatorPodcasts',
+                                    sortBy: { createdAt: -1 },
+                                },
+                            }, // Sort podcasts by createdAt descending
+                            0, // Take the first element (most recent podcast)
+                        ],
                     },
                 },
             },
