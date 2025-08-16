@@ -67,6 +67,11 @@ router.get(
     '/subcategory-with-podcasts/:id',
     podcastController.getPodcastForSubcategories
 );
+router.post(
+    '/podcast-like-unlike/:id',
+    auth(USER_ROLE.user, USER_ROLE.creator),
+    podcastController.toggleLikePodcast
+);
 
 router.get('/get-home-data', podcastController.getHomeData);
 export const podcastRoutes = router;

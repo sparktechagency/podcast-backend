@@ -133,6 +133,18 @@ const getPodcastForSubcategories = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const toggleLikePodcast = catchAsync(async (req, res) => {
+    const result = await podcastService.toggleLikePodcast(
+        req.params.id,
+        req.user
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: result.message,
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -145,6 +157,7 @@ const podcastController = {
     getPodcastFeedForUser,
     getPodcastForSubcategories,
     getMyPodcasts,
+    toggleLikePodcast,
 };
 
 export default podcastController;

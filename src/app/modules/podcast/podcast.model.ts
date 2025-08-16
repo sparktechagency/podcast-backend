@@ -37,10 +37,20 @@ const PodcastSchema = new Schema<IPodcast>(
             type: Number,
             required: true,
         },
-        liker: {
-            type: [Schema.Types.ObjectId],
-            ref: 'NormalUser',
-        },
+        likers: [
+            {
+                user: {
+                    type: Schema.Types.ObjectId,
+                    required: true,
+                    refPath: 'likers.userType',
+                },
+                userType: {
+                    type: String,
+                    required: true,
+                    enum: ['NormalUser', 'Creator'],
+                },
+            },
+        ],
     },
     { timestamps: true }
 );

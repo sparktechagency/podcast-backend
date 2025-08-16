@@ -101,6 +101,7 @@ const getTopCreators = async (query: Record<string, unknown>) => {
                 profile_cover: '$creatorInfo.profile_cover',
                 phone: '$creatorInfo.phone',
                 location: '$creatorInfo.location',
+                donationLink: '$creatorInfo.donationLink',
             },
         },
         {

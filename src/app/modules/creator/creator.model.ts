@@ -31,6 +31,10 @@ const creatorSchema = new Schema<ICreator>(
             type: Boolean,
             default: false,
         },
+        donationLink: {
+            type: String,
+            default: '',
+        },
     },
     { timestamps: true }
 );

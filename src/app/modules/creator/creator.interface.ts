@@ -16,4 +16,5 @@ export interface ICreator {
     profile_cover: string;
     gender: (typeof ENUM_GENDER)[keyof typeof ENUM_GENDER];
     isApproved: boolean;
+    donationLink?: string;
 }

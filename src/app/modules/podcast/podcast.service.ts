@@ -15,6 +15,8 @@ import Album from '../album/album.model';
 import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
 import mongoose from 'mongoose';
 import Bookmark from '../bookmark/bookmark.model';
+import { JwtPayload } from 'jsonwebtoken';
+import { USER_ROLE } from '../user/user.constant';
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
@@ -95,7 +97,7 @@ const getAllPodcasts = async (query: Record<string, unknown>) => {
 
     const resultQuery = new QueryBuilder(
         Podcast.find({ ...filterQuery }).populate([
-            { path: 'creator', select: 'name profile_image' },
+            { path: 'creator', select: 'name profile_image donationLink' },
             { path: 'category', select: 'name' },
             { path: 'subCategory', select: 'name' },
         ]),
@@ -1151,6 +1153,7 @@ const getHomeData = async () => {
                     profile_cover: '$creatorInfo.profile_cover',
                     phone: '$creatorInfo.phone',
                     location: '$creatorInfo.location',
+                    donationLink: '$creatorInfo.donationLink',
                 },
             },
         ]),
@@ -1343,6 +1346,35 @@ const getPodcastForSubcategories = async (categoryId: string) => {
 
     return result;
 };
+
+const toggleLikePodcast = async (podcastId: string, userData: JwtPayload) => {
+    const userId = userData.profileId;
+    const userType =
+        userData.role == USER_ROLE.creator ? 'Creator' : 'NormalUser';
+    const podcast = await Podcast.findById(podcastId);
+    if (!podcast) {
+        throw new Error('Podcast not found');
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const isLiked = podcast.likers.some(
+        (liker: any) =>
+            liker.user.equals(userObjectId) && liker.userType === userType
+    );
+
+    if (isLiked) {
+        await Podcast.findByIdAndUpdate(podcastId, {
+            $pull: { likers: { user: userObjectId, userType } },
+        });
+        return { message: 'Unliked successfully' };
+    } else {
+        await Podcast.findByIdAndUpdate(podcastId, {
+            $push: { likers: { user: userObjectId, userType } },
+        });
+        return { message: 'Liked successfully' };
+    }
+};
 const podcastService = {
     createPodcastIntoDB,
     updatePodcastIntoDB,
@@ -1354,6 +1386,7 @@ const podcastService = {
     getPodcastFeedForUser,
     getPodcastForSubcategories,
     getMyPodcasts,
+    toggleLikePodcast,
 };
 
 export default podcastService;
