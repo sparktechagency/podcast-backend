@@ -68,7 +68,7 @@ router.get(
     podcastController.getPodcastForSubcategories
 );
 router.post(
-    '/podcast-like-unlike/:id',
+    '/like-unlike/:id',
     auth(USER_ROLE.user, USER_ROLE.creator),
     podcastController.toggleLikePodcast
 );
