@@ -1412,12 +1412,12 @@ const toggleLikePodcast = async (podcastId: string, userData: JwtPayload) => {
         await Podcast.findByIdAndUpdate(podcastId, {
             $pull: { likers: { user: userObjectId, userType } },
         });
-        return { message: 'Unliked successfully' };
+        return { isLike: false };
     } else {
         await Podcast.findByIdAndUpdate(podcastId, {
             $push: { likers: { user: userObjectId, userType } },
         });
-        return { message: 'Liked successfully' };
+        return { isLike: true };
     }
 };
 const podcastService = {

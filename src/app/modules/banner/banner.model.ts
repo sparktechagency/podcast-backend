@@ -7,6 +7,17 @@ const bannerSchema = new Schema<IBanner>(
             type: String,
             required: true,
         },
+        url: {
+            type: String,
+        },
+        startDate: {
+            type: Date,
+            required: true,
+        },
+        endDate: {
+            type: Date,
+            required: true,
+        },
     },
     { timestamps: true }
 );

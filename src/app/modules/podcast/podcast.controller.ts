@@ -141,7 +141,7 @@ const toggleLikePodcast = catchAsync(async (req, res) => {
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: result.message,
+        message: result.isLike ? 'Liked successfully' : 'Unliked successfully',
         data: result,
     });
 });
