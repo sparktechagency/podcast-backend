@@ -12,7 +12,7 @@ const createComment = catchAsync(async (req, res) => {
         data: result,
     });
 });
-
+    
 const createReply = catchAsync(async (req, res) => {
     const result = await commentServices.createReply(req.user, req.body);
     sendResponse(res, {

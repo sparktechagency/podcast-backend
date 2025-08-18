@@ -92,6 +92,7 @@
 #                   # Start the backend application with PM2
 #                   ssh $EC2_USER@$EC2_HOST "cd ~/applications/backend && pm2 start dist/server.js --name backend"
 
+
 # # name: Deploy Node.js + Redis on EC2 with Docker
 
 # # on:
@@ -143,6 +144,8 @@
 # #           ssh $EC2_USER@$EC2_HOST "docker rm -f backend-app || true"
 
 # #           ssh $EC2_USER@$EC2_HOST "docker run -d --name backend-app -p 5090:5090 --env-file ~/applications/backend/.env ${{ secrets.DOCKERHUB_USERNAME }}/backend-app:latest"
+
+
 
 # #With redis password authentication
 # # name: Deploy Node.js + Redis on EC2 with Docker
