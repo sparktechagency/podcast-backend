@@ -3,25 +3,25 @@ import AppError from '../../error/appError';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import { IBanner } from './banner.interface';
 import Banner from './banner.model';
-import QueryBuilder from '../../builder/QueryBuilder';
 
 const createBanner = async (payload: IBanner) => {
     return await Banner.create(payload);
 };
 
-const getAllBanners = async (query: Record<string, unknown>) => {
-    const resultQuery = new QueryBuilder(Banner.find(), query)
-        .fields()
-        .filter()
-        .paginate()
-        .sort();
-
-    const result = await resultQuery.modelQuery;
-    const meta = await resultQuery.countTotal();
-    return {
-        meta,
-        result,
-    };
+const getAllBanners = async () => {
+    const today = new Date();
+    const result = await Banner.aggregate([
+        {
+            $match: {
+                startDate: { $lte: today },
+                endDate: { $gte: today },
+            },
+        },
+        {
+            $sample: { size: 20 },
+        },
+    ]);
+    return result;
 };
 
 const updateBanner = async (id: string, payload: Partial<IBanner>) => {
