@@ -30,9 +30,9 @@ const updateBanner = async (id: string, payload: Partial<IBanner>) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Banner not found');
     }
     const result = await Banner.findByIdAndUpdate(id, payload, { new: true });
-    if (payload.image) {
-        if (banner.image) {
-            deleteFileFromS3(banner.image);
+    if (payload.url) {
+        if (banner.url) {
+            deleteFileFromS3(banner.url);
         }
     }
     return result;

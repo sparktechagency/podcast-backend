@@ -3,10 +3,6 @@ import { IBanner } from './banner.interface';
 
 const bannerSchema = new Schema<IBanner>(
     {
-        image: {
-            type: String,
-            required: true,
-        },
         url: {
             type: String,
         },

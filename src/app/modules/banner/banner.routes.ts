@@ -9,7 +9,7 @@ import { uploadFile } from '../../helper/mutler-s3-uploader';
 const router = express.Router();
 
 router.post(
-    '/create-banner',
+    '/create',
     auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {

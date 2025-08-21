@@ -16,9 +16,6 @@ const registerUser = catchAsync(async (req, res) => {
 });
 
 const getMyProfile = catchAsync(async (req, res) => {
-    const clientIp =
-        req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    console.log('client ip', clientIp);
     const result = await userServices.getMyProfile(req.user);
 
     sendResponse(res, {

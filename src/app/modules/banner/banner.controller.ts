@@ -8,7 +8,7 @@ import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 const createBanner = catchAsync(async (req, res) => {
     const file: any = req.files?.banner;
     if (req.files?.banner) {
-        req.body.image = getCloudFrontUrl(file[0].key);
+        req.body.url = getCloudFrontUrl(file[0].key);
     }
     const result = await bannerServices.createBanner(req.body);
     sendResponse(res, {
