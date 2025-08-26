@@ -22,10 +22,14 @@ router.post(
     bannerController.createBanner
 );
 
-router.get('/get-all-banner', bannerController.getAllBanners);
+router.get(
+    '/get-all',
+    auth(USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.user),
+    bannerController.getAllBanners
+);
 
 router.patch(
-    '/update-banner/:id',
+    '/update/:id',
     auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
@@ -34,12 +38,12 @@ router.patch(
         }
         next();
     },
-    validateRequest(bannerValidations.createBannerValidationSchema),
+    validateRequest(bannerValidations.updateBannerValidationSchema),
     bannerController.updateBanner
 );
 
 router.delete(
-    '/delete-banner/:id',
+    '/delete/:id',
     auth(USER_ROLE.superAdmin),
     bannerController.deleteBanner
 );

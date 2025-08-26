@@ -1,5 +1,6 @@
 export interface IBanner {
-    url: string;
+    banner_url: string;
+    redirect_url?: string;
     startDate: Date;
     endDate: Date;
 }

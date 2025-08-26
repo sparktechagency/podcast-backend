@@ -3,7 +3,10 @@ import { IBanner } from './banner.interface';
 
 const bannerSchema = new Schema<IBanner>(
     {
-        url: {
+        banner_url: {
+            type: String,
+        },
+        redirect_url: {
             type: String,
         },
         startDate: {

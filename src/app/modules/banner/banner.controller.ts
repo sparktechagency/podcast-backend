@@ -8,7 +8,7 @@ import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 const createBanner = catchAsync(async (req, res) => {
     const file: any = req.files?.banner;
     if (req.files?.banner) {
-        req.body.url = getCloudFrontUrl(file[0].key);
+        req.body.banner_url = getCloudFrontUrl(file[0].key);
     }
     const result = await bannerServices.createBanner(req.body);
     sendResponse(res, {
@@ -20,7 +20,7 @@ const createBanner = catchAsync(async (req, res) => {
 });
 
 const getAllBanners = catchAsync(async (req, res) => {
-    const result = await bannerServices.getAllBanners();
+    const result = await bannerServices.getAllBanners(req.user, req.query);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -33,7 +33,7 @@ const updateBanner = catchAsync(async (req, res) => {
     const { id } = req.params;
     const file: any = req.files?.banner;
     if (req.files?.banner) {
-        req.body.image = getCloudFrontUrl(file[0].key);
+        req.body.banner_url = getCloudFrontUrl(file[0].key);
     }
     const result = await bannerServices.updateBanner(id, req.body);
     sendResponse(res, {
