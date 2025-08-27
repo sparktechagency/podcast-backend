@@ -21,7 +21,9 @@ logs
 
 # Docker-related
 docker-compose.*
-Dockerfile*
+
+# Build output
+dist
 
 # Test files
 __tests__/
