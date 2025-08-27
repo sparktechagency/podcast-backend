@@ -133,7 +133,7 @@ jobs:
                   ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
                     
                   ssh $EC2_USER@$EC2_HOST "sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/podcast-backend:latest"
-                  ssh $EC2_USER@$EC2_HOST "sudo docker ps -q -f name=redis-prod || sudo docker run -d --name redis-prod -p 6379:6379 --restart unless-stopped redis:latest"
+                  ssh $EC2_USER@$EC2_HOST "sudo docker ps -q -f name=podcast-redis || sudo docker run -d --name podcast-redis -p 6379:6379 --restart unless-stopped redis:latest"
                   ssh $EC2_USER@$EC2_HOST "sudo docker rm -f podcast-backend || true"
                   ssh $EC2_USER@$EC2_HOST "sudo docker run -d --name podcast-backend -p 5000:5000 --env-file ~/applications/backend/.env ${{ secrets.DOCKERHUB_USERNAME }}/podcast-backend:latest"
 
