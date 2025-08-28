@@ -6,7 +6,7 @@ import { IStreamRoom } from './liveStreaming.interface';
 const getMgmToken = () =>
     Buffer.from(`${config.hms.hms_secret}`).toString('base64');
 
-const createLiveRoom = async (payload: IStreamRoom) => {
+const createStreamingRoom = async (payload: IStreamRoom) => {
     const { name, description, template_id } = payload;
     const response = await fetch(`${HMS_ENDPOINT}/rooms`, {
         method: 'POST',
@@ -25,6 +25,6 @@ const createLiveRoom = async (payload: IStreamRoom) => {
 };
 
 const LiveStreamingServices = {
-    createLiveRoom,
+    createStreamingRoom,
 };
 export default LiveStreamingServices;

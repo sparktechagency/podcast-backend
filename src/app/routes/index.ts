@@ -1,22 +1,23 @@
 import { Router } from 'express';
-import { userRoutes } from '../modules/user/user.routes';
+import { albumRoutes } from '../modules/album/album.routes';
 import { authRoutes } from '../modules/auth/auth.routes';
+import { bannerRoutes } from '../modules/banner/banner.routes';
+import { bookmarkRoutes } from '../modules/bookmark/bookmark.routes';
+import { categoryRoutes } from '../modules/category/category.routes';
+import { commentRoutes } from '../modules/comment/comment.routes';
+import { creatorRoutes } from '../modules/creator/creator.routes';
+import { feedbackRoutes } from '../modules/feedback/feedback.routes';
+import { liveStreamingRoutes } from '../modules/liveStreaming/liveStreaming.routes';
 import { ManageRoutes } from '../modules/manage-web/manage.routes';
+import { metaRoutes } from '../modules/meta/meta.routes';
 import { normalUserRoutes } from '../modules/normalUser/normalUser.routes';
 import { notificationRoutes } from '../modules/notification/notification.routes';
-import { metaRoutes } from '../modules/meta/meta.routes';
-import { feedbackRoutes } from '../modules/feedback/feedback.routes';
-import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
-import { podcastRoutes } from '../modules/podcast/podcast.routes';
 import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
-import { albumRoutes } from '../modules/album/album.routes';
-import { categoryRoutes } from '../modules/category/category.routes';
+import { podcastRoutes } from '../modules/podcast/podcast.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
-import { creatorRoutes } from '../modules/creator/creator.routes';
+import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
+import { userRoutes } from '../modules/user/user.routes';
 import { watchHistoryRoutes } from '../modules/watchHistory/watchHistory.routes';
-import { bookmarkRoutes } from '../modules/bookmark/bookmark.routes';
-import { commentRoutes } from '../modules/comment/comment.routes';
-import { bannerRoutes } from '../modules/banner/banner.routes';
 
 const router = Router();
 
@@ -94,6 +95,10 @@ const moduleRoutes = [
     {
         path: '/comment',
         router: commentRoutes,
+    },
+    {
+        path: '/live-streaming',
+        router: liveStreamingRoutes,
     },
 ];
 

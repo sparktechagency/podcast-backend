@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const updateLiveStreamingData = z.object({
+export const createStreamingRoomValidationSchema = z.object({
     body: z.object({
-        name: z.string().optional(),
-        phone: z.string().optional(),
-        address: z.string().optional(),
+        name: z.string({ required_error: 'Room name is required' }),
+        description: z.string({ required_error: 'Description is required' }),
+        template_id: z.string({ required_error: 'Template ID is required' }),
     }),
 });
 
-const LiveStreamingValidations = { updateLiveStreamingData };
+const LiveStreamingValidations = { createStreamingRoomValidationSchema };
 export default LiveStreamingValidations;
