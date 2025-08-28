@@ -13,5 +13,15 @@ const createStreamingRoom = catchAsync(async (req, res) => {
     });
 });
 
-const LiveStreamingController = { createStreamingRoom };
+const getJoinToken = catchAsync(async (req, res) => {
+    const result = await liveStreamingServices.getJoinToken(req.body);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Join token generated successfully',
+        data: result,
+    });
+});
+
+const LiveStreamingController = { createStreamingRoom, getJoinToken };
 export default LiveStreamingController;

@@ -15,5 +15,10 @@ router.post(
     ),
     liveStreamingController.createStreamingRoom
 );
+router.get(
+    '/get-join-token',
+    auth(USER_ROLE.user),
+    liveStreamingController.getJoinToken
+);
 
 export const liveStreamingRoutes = router;
