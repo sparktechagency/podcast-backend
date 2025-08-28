@@ -3,22 +3,22 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import express, { Application } from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import globalErrorHandler from './app/middlewares/globalErrorHandler';
-import router from './app/routes';
-import notFound from './app/middlewares/notFound';
-const app: Application = express();
-import sendContactUsEmail from './app/helper/sendContactUsEmail';
+import cors from 'cors';
 import dotenv from 'dotenv';
-import AppError from './app/error/appError';
+import express, { Application } from 'express';
 import httpStatus from 'http-status';
+import AppError from './app/error/appError';
 import {
     generateMultiplePresignedUrls,
     generatePresignedUrl,
 } from './app/helper/presignedUrlGenerator';
+import sendContactUsEmail from './app/helper/sendContactUsEmail';
+import globalErrorHandler from './app/middlewares/globalErrorHandler';
+import notFound from './app/middlewares/notFound';
+import router from './app/routes';
 import redis from './app/utilities/redisClient';
+const app: Application = express();
 dotenv.config();
 
 // parser---------

@@ -37,5 +37,9 @@ export default {
         smtp_pass: process.env.SMTP_PASS,
         name: process.env.SERVICE_NAME,
     },
+    hms: {
+        hms_access_key: process.env.HMS_ACCESS_KEY,
+        hms_secret: process.env.HMS_SECRET,
+    },
     smartsheet_api_key: process.env.SMARTSHEET_API_KEY,
 };
