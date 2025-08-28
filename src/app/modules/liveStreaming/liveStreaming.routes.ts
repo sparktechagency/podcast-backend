@@ -20,5 +20,11 @@ router.get(
     auth(USER_ROLE.user),
     liveStreamingController.getJoinToken
 );
+router.get(
+    '/invite-user',
+    auth(USER_ROLE.user),
+    validateRequest(liveStreamingValidations.inviteUserValidationSchema),
+    liveStreamingController.inviteUser
+);
 
 export const liveStreamingRoutes = router;

@@ -8,5 +8,18 @@ export const createStreamingRoomValidationSchema = z.object({
     }),
 });
 
-const LiveStreamingValidations = { createStreamingRoomValidationSchema };
+const inviteUserValidationSchema = z.object({
+    body: z.object({
+        invitedUserId: z.string({
+            required_error: 'Invited user ID is required',
+        }),
+        role: z.string({ required_error: 'Role is required' }),
+        room_id: z.string({ required_error: 'Room ID is required' }),
+    }),
+});
+
+const LiveStreamingValidations = {
+    createStreamingRoomValidationSchema,
+    inviteUserValidationSchema,
+};
 export default LiveStreamingValidations;

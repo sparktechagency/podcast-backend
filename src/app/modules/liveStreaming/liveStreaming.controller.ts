@@ -4,7 +4,10 @@ import sendResponse from '../../utilities/sendResponse';
 import liveStreamingServices from './liveStreaming.service';
 
 const createStreamingRoom = catchAsync(async (req, res) => {
-    const result = await liveStreamingServices.createStreamingRoom(req.body);
+    const result = await liveStreamingServices.createStreamingRoom(
+        req.user.profileId,
+        req.body
+    );
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -23,5 +26,22 @@ const getJoinToken = catchAsync(async (req, res) => {
     });
 });
 
-const LiveStreamingController = { createStreamingRoom, getJoinToken };
+const inviteUser = catchAsync(async (req, res) => {
+    const result = await liveStreamingServices.inviteUser(
+        req.user.profileId,
+        req.body
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'User invited successfully',
+        data: result,
+    });
+});
+
+const LiveStreamingController = {
+    createStreamingRoom,
+    getJoinToken,
+    inviteUser,
+};
 export default LiveStreamingController;
