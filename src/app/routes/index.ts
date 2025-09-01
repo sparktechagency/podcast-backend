@@ -14,6 +14,7 @@ import { normalUserRoutes } from '../modules/normalUser/normalUser.routes';
 import { notificationRoutes } from '../modules/notification/notification.routes';
 import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
 import { podcastRoutes } from '../modules/podcast/podcast.routes';
+import { reportRoutes } from '../modules/report/report.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
 import { userRoutes } from '../modules/user/user.routes';
@@ -97,8 +98,12 @@ const moduleRoutes = [
         router: commentRoutes,
     },
     {
-        path: '/live-streaming',
+        path: '/live-stream',
         router: liveStreamingRoutes,
+    },
+    {
+        path: '/report',
+        router: reportRoutes,
     },
 ];
 

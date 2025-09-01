@@ -17,6 +17,7 @@ const createStreamingRoom = catchAsync(async (req, res) => {
 });
 
 const getJoinToken = catchAsync(async (req, res) => {
+    req.body.user_id = req.user.profileId;
     const result = await liveStreamingServices.getJoinToken(req.body);
     sendResponse(res, {
         statusCode: httpStatus.OK,

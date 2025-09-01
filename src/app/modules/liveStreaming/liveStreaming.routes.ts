@@ -9,20 +9,20 @@ const router = express.Router();
 
 router.post(
     '/create-streaming-room',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.creator),
     validateRequest(
         liveStreamingValidations.createStreamingRoomValidationSchema
     ),
     liveStreamingController.createStreamingRoom
 );
-router.get(
+router.post(
     '/get-join-token',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.creator, USER_ROLE.user),
     liveStreamingController.getJoinToken
 );
 router.get(
     '/invite-user',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.creator),
     validateRequest(liveStreamingValidations.inviteUserValidationSchema),
     liveStreamingController.inviteUser
 );

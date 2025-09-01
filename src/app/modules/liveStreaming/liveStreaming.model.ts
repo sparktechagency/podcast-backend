@@ -23,7 +23,7 @@ const StreamRoomSchema: Schema<IStreamRoomDocument> = new Schema(
         },
         template_id: {
             type: String,
-            required: true,
+            default: '67ec0c3d4b6eb78daeedc180',
         },
         room_id: {
             type: String,
