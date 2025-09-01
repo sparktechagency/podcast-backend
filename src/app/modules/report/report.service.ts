@@ -4,8 +4,8 @@ import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
 import AppError from '../../error/appError';
-import NormalUser from '../normalUser/normalUser.model';
 import { USER_ROLE } from '../user/user.constant';
+import { User } from '../user/user.model';
 import { IReport } from './report.interface';
 import Report from './report.model';
 
@@ -16,14 +16,13 @@ const createReport = async (userData: JwtPayload, payload: IReport) => {
             'You are not able to report yourself'
         );
     }
-    const reportTo: any = await NormalUser.findOne(payload.reportTo)
-        .select('user')
-        .populate({ path: 'user', select: 'role' });
+    const reportTo: any = await User.findOne({ profileId: payload.reportTo });
+
     if (!reportTo) {
         throw new AppError(httpStatus.NOT_FOUND, 'Reported user not found');
     }
     payload.reportToModel =
-        reportTo.user.role == USER_ROLE.user ? 'NormalUser' : 'Creator';
+        reportTo.role == USER_ROLE.user ? 'NormalUser' : 'Creator';
     payload.reportFromModel =
         userData.role == USER_ROLE.user ? 'NormalUser' : 'Creator';
     const result = await Report.create({

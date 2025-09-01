@@ -1,15 +1,15 @@
 import express from 'express';
 import auth from '../../middlewares/auth';
-import { USER_ROLE } from '../user/user.constant';
 import validateRequest from '../../middlewares/validateRequest';
-import ReportValidations from './report.validation';
+import { USER_ROLE } from '../user/user.constant';
 import ReportController from './report.controller';
+import ReportValidations from './report.validation';
 
 const router = express.Router();
 
 router.post(
     '/create-report',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.creator),
     validateRequest(ReportValidations.reportValidationSchema),
     ReportController.createReport
 );
