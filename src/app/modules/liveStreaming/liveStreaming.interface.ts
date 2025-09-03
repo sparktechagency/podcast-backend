@@ -9,4 +9,15 @@ export interface IStreamRoom {
     status: (typeof ENUM_LIVE_STREAM_STATUS)[keyof typeof ENUM_LIVE_STREAM_STATUS];
     startTime?: Date;
     endTime?: Date;
+    roomCodes: IRoomCode[];
+}
+
+export interface IRoomCode {
+    id: string;
+    code: string;
+    room_id: string;
+    role: string;
+    enabled: boolean;
+    created_at: string;
+    updated_at: string;
 }

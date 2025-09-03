@@ -1,9 +1,17 @@
 import { Document, model, Schema } from 'mongoose';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
-import { IStreamRoom } from './liveStreaming.interface';
+import { IRoomCode, IStreamRoom } from './liveStreaming.interface';
 
 interface IStreamRoomDocument extends IStreamRoom, Document {}
-
+const RoomCodeSchema: Schema = new Schema<IRoomCode>({
+    id: { type: String, required: true, unique: true },
+    code: { type: String, required: true },
+    room_id: { type: String, required: true, index: true },
+    role: { type: String, required: true },
+    enabled: { type: Boolean, default: true },
+    created_at: { type: String, required: true },
+    updated_at: { type: String, required: true },
+});
 const StreamRoomSchema: Schema<IStreamRoomDocument> = new Schema(
     {
         host: {
@@ -44,6 +52,7 @@ const StreamRoomSchema: Schema<IStreamRoomDocument> = new Schema(
             type: Date,
             default: null,
         },
+        roomCodes: [RoomCodeSchema],
     },
     { timestamps: true }
 );

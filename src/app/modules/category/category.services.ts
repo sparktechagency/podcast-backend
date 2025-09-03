@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import AppError from '../../error/appError';
+import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import { generateCacheKey } from '../../utilities/generateCacheKey';
+import redis from '../../utilities/redisClient';
 import { ICategory } from './category.interface';
 import Category from './category.model';
-import { deleteFileFromS3 } from '../../helper/deleteFromS3';
-import redis from '../../utilities/redisClient';
 
 // create category into db
 const createCategoryIntoDB = async (payload: ICategory) => {
@@ -54,7 +55,7 @@ const getAllCategories = async (query: Record<string, unknown>) => {
     const page = parseInt(query.page as string) || 1;
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
-    const cacheKey = `categories:page=${page}:limit=${limit}`;
+    const cacheKey = generateCacheKey('categories', query);
     const cached = await redis.get(cacheKey);
     if (cached) {
         return JSON.parse(cached);
@@ -62,6 +63,12 @@ const getAllCategories = async (query: Record<string, unknown>) => {
     const matchConditions: any = {
         isDeleted: false,
     };
+    if (query.searchTerm && typeof query.searchTerm === 'string') {
+        matchConditions.name = {
+            $regex: query.searchTerm,
+            $options: 'i',
+        };
+    }
 
     const data = await Category.aggregate([
         {

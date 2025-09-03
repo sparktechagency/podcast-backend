@@ -9,11 +9,13 @@ import { ENUM_NOTIFICATION_TYPE } from '../../utilities/enum';
 import { getMgmToken } from '../../utilities/getMgmToken';
 import Notification from '../notification/notification.model';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
-import { IStreamRoom } from './liveStreaming.interface';
+import {
+    createRoomCodesForAllRoles,
+    generateRoomName,
+} from './liveStreaming.helpers';
 import { StreamRoom } from './liveStreaming.model';
-const createStreamingRoom = async (profileId: string, payload: IStreamRoom) => {
-    const { name, description, template_id } = payload;
-    console.log('get msg tokne', getMgmToken());
+const createStreamingRoom = async (profileId: string) => {
+    const name = generateRoomName();
     const response = await fetch(`${HMS_ENDPOINT}/rooms`, {
         method: 'POST',
         headers: {
@@ -22,30 +24,27 @@ const createStreamingRoom = async (profileId: string, payload: IStreamRoom) => {
         },
         body: JSON.stringify({
             name,
-            description,
-            template_id,
+            template_id: config.hms.template_id,
         }),
     });
-    console.log('response', response);
     const roomData = await response.json();
-    console.log('rommdatewa', roomData);
-    const room = await StreamRoom.create({
+
+    const roomCodes = await createRoomCodesForAllRoles(roomData.id);
+    await StreamRoom.create({
         host: profileId,
         name,
-        description,
-        template_id,
+        template_id: config.hms.template_id,
         room_id: roomData.id,
         status: ENUM_LIVE_STREAM_STATUS.wating,
+        roomCodes,
     });
-    console.log('room', room);
+    // const joinToken = await getJoinToken({
+    //     user_id: profileId,
+    //     role: 'host',
+    //     room_id: roomData.id,
+    // });
 
-    const joinToken = await getJoinToken({
-        user_id: profileId,
-        role: 'host',
-        room_id: roomData.id,
-    });
-
-    return { roomData, joinToken };
+    return { roomData, roomCodes };
 };
 
 // generate join token api
