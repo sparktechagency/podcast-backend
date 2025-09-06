@@ -1,8 +1,7 @@
-import { Document, model, Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
 import { IRoomCode, IStreamRoom } from './liveStreaming.interface';
 
-interface IStreamRoomDocument extends IStreamRoom, Document {}
 const RoomCodeSchema: Schema = new Schema<IRoomCode>({
     id: { type: String, required: true, unique: true },
     code: { type: String, required: true },
@@ -12,7 +11,18 @@ const RoomCodeSchema: Schema = new Schema<IRoomCode>({
     created_at: { type: String, required: true },
     updated_at: { type: String, required: true },
 });
-const StreamRoomSchema: Schema<IStreamRoomDocument> = new Schema(
+
+const RecordingSchema: Schema = new Schema(
+    {
+        session_id: { type: String, required: true },
+        started_at: { type: Date },
+        ended_at: { type: Date },
+        duration: { type: Number }, // seconds
+        url: { type: String, required: true },
+    },
+    { _id: false }
+);
+const StreamRoomSchema = new Schema<IStreamRoom>(
     {
         host: {
             type: Schema.Types.ObjectId,
@@ -53,11 +63,9 @@ const StreamRoomSchema: Schema<IStreamRoomDocument> = new Schema(
             default: null,
         },
         roomCodes: [RoomCodeSchema],
+        recordings: [RecordingSchema],
     },
     { timestamps: true }
 );
 
-export const StreamRoom = model<IStreamRoomDocument>(
-    'StreamRoom',
-    StreamRoomSchema
-);
+export const StreamRoom = model<IStreamRoom>('StreamRoom', StreamRoomSchema);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undef */
 import httpStatus from 'http-status';
 import jwt from 'jsonwebtoken';
@@ -15,6 +16,21 @@ import {
 } from './liveStreaming.helpers';
 import { StreamRoom } from './liveStreaming.model';
 const createStreamingRoom = async (profileId: string) => {
+    const liveRoom = await StreamRoom.findOne({
+        host: profileId,
+        $or: [
+            { status: ENUM_LIVE_STREAM_STATUS.live },
+            { status: ENUM_LIVE_STREAM_STATUS.wating },
+        ],
+    });
+
+    if (liveRoom) {
+        throw new AppError(
+            httpStatus.NOT_FOUND,
+            "You can't able to start another live , because you already created a room for live , please join with that"
+        );
+    }
+
     const name = generateRoomName();
     const response = await fetch(`${HMS_ENDPOINT}/rooms`, {
         method: 'POST',
@@ -128,9 +144,89 @@ const inviteUser = async (
     return token;
 };
 
+const endLiveAndStoreRecordings = async (roomId: string) => {
+    // Find the room first
+    const room = await StreamRoom.findOne({ room_id: roomId });
+    if (!room) throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
+
+    // const allRecording = await fetch(
+    //     `${HMS_ENDPOINT}/v2/recordings?room_id=${roomId}`,
+    //     {
+    //         method: 'GET',
+    //         headers: {
+    //             Authorization: `Bearer ${getMgmToken()}`,
+    //         },
+    //     }
+    // );
+
+    // const allRecordings = await allRecording.json();
+    // console.log('all recordings', allRecordings);
+
+    // 1. Fetch sessions for this room
+    const sessionRes = await fetch(
+        `${HMS_ENDPOINT}/sessions?room_id=${roomId}`,
+        {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${await getMgmToken()}`,
+            },
+        }
+    );
+    const sessionData = await sessionRes.json();
+    console.log('sessionRes', sessionData);
+    console.log('reocododd', sessionData.data[0].recording);
+    console.log('reocododd', sessionData.data[1].recording);
+    console.log('reocododd', sessionData.data[2].recording);
+
+    for (const session of sessionData.data) {
+        const sessionId = session.id;
+        console.log('session id', sessionId);
+        // 2. Fetch recordings for this session
+        const recordingRes = await fetch(
+            `${HMS_ENDPOINT}/recordings?session_id=${sessionId}`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${getMgmToken()}`,
+                },
+            }
+        );
+        const recordingData = await recordingRes.json();
+        console.log('recroding', recordingData);
+        // 3. Store recordings in DB
+        // const recordings = recordingData.data.map((r: any) => ({
+        //     session_id: sessionId,
+        //     started_at: session.started_at,
+        //     ended_at: session.ended_at,
+        //     duration: session.duration,
+        //     url: r.url, // actual downloadable recording URL
+        // }));
+
+        // room.recordings.push(...recordings);
+    }
+
+    // room.status = ENUM_LIVE_STREAM_STATUS.ended;
+    // room.endTime = new Date();
+    // await room.save();
+
+    // return room;
+
+    return null;
+};
+
+const getMyLiveRoom = async (profileId: string) => {
+    const room = await StreamRoom.findOne({
+        status: ENUM_LIVE_STREAM_STATUS.live,
+        host: profileId,
+    });
+    return room;
+};
+
 const LiveStreamingServices = {
     createStreamingRoom,
     getJoinToken,
     inviteUser,
+    endLiveAndStoreRecordings,
+    getMyLiveRoom,
 };
 export default LiveStreamingServices;

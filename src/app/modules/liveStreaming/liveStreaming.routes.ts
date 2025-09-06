@@ -17,11 +17,16 @@ router.post(
     auth(USER_ROLE.creator, USER_ROLE.user),
     liveStreamingController.getJoinToken
 );
-router.get(
+router.post(
     '/invite-user',
     auth(USER_ROLE.creator),
     validateRequest(liveStreamingValidations.inviteUserValidationSchema),
     liveStreamingController.inviteUser
+);
+router.post(
+    '/end-live/:id',
+    // auth(USER_ROLE.creator),
+    liveStreamingController.endLiveAndStoreRecordings
 );
 
 export const liveStreamingRoutes = router;

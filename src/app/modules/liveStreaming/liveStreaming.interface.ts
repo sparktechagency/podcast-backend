@@ -10,6 +10,14 @@ export interface IStreamRoom {
     startTime?: Date;
     endTime?: Date;
     roomCodes: IRoomCode[];
+    recordings: IRecording[];
+}
+export interface IRecording {
+    session_id: string;
+    started_at?: Date;
+    ended_at?: Date;
+    duration?: number; // in seconds
+    url: string;
 }
 
 export interface IRoomCode {
