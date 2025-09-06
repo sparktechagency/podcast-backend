@@ -49,11 +49,23 @@ const endLiveAndStoreRecordings = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getMyLiveRoom = catchAsync(async (req, res) => {
+    const result = await liveStreamingServices.getMyLiveRoom(
+        req.user.profileId
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Your live room retrieved successfully',
+        data: result,
+    });
+});
 
 const LiveStreamingController = {
     createStreamingRoom,
     getJoinToken,
     inviteUser,
     endLiveAndStoreRecordings,
+    getMyLiveRoom,
 };
 export default LiveStreamingController;

@@ -51,7 +51,7 @@ const createStreamingRoom = async (profileId: string) => {
         name,
         template_id: config.hms.template_id,
         room_id: roomData.id,
-        status: ENUM_LIVE_STREAM_STATUS.wating,
+        status: ENUM_LIVE_STREAM_STATUS.live,
         roomCodes,
     });
     // const joinToken = await getJoinToken({
@@ -219,6 +219,9 @@ const getMyLiveRoom = async (profileId: string) => {
         status: ENUM_LIVE_STREAM_STATUS.live,
         host: profileId,
     });
+    if (!room) {
+        return null;
+    }
     return room;
 };
 

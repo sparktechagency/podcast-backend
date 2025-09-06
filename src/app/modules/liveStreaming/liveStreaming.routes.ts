@@ -17,6 +17,11 @@ router.post(
     auth(USER_ROLE.creator, USER_ROLE.user),
     liveStreamingController.getJoinToken
 );
+router.get(
+    '/get-my-live-room',
+    auth(USER_ROLE.creator),
+    liveStreamingController.getMyLiveRoom
+);
 router.post(
     '/invite-user',
     auth(USER_ROLE.creator),
