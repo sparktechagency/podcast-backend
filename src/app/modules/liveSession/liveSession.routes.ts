@@ -22,4 +22,10 @@ router.patch(
     liveSessionController.updateLiveSessionData
 );
 
+router.get(
+    '/get-previous-live',
+    auth(USER_ROLE.creator, USER_ROLE.user),
+    liveSessionController.getAllLiveSessions
+);
+
 export const liveSessionRoutes = router;

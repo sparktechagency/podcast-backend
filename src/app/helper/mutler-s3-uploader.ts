@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { S3Client } from '@aws-sdk/client-s3';
 import { Request } from 'express';
 import multer from 'multer';
 import multerS3 from 'multer-s3';
-import { S3Client } from '@aws-sdk/client-s3';
 
 /**
  * Configure and setup AWS S3 client
@@ -117,6 +117,8 @@ export const uploadFile = () => {
                 uploadPath = 'uploads/images/playlist_cover';
             } else if (file.fieldname === 'album_cover') {
                 uploadPath = 'uploads/images/album_cover';
+            } else if (file.fieldname === 'liveCover') {
+                uploadPath = 'uploads/images/liveCover';
             } else {
                 uploadPath = 'uploads';
             }

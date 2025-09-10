@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import LiveSessionServices from './liveSession.service';
@@ -7,6 +9,10 @@ const updateLiveSessionData = catchAsync(async (req, res) => {
     const { id } = req.params;
     const payload = req.body;
     const profileId = req.user.profileId;
+    const file: any = req.files?.liveCover;
+    if (file) {
+        req.body.coverImage = getCloudFrontUrl(file[0].key);
+    }
 
     const result = await LiveSessionServices.updateLiveSessionData(
         profileId,
