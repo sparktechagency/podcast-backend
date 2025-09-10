@@ -38,10 +38,26 @@ const getAllLiveSessions = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const togglePublicPrivate = catchAsync(async (req, res) => {
+    const result = await LiveSessionServices.togglePublicPrivate(
+        req.user.profileId,
+        req.params.id
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: result?.isPublic
+            ? 'Live recording publiced successfully'
+            : 'Live recording privated successfully',
+        data: result,
+    });
+});
 
 const LiveSessionController = {
     updateLiveSessionData,
     getAllLiveSessions,
+    togglePublicPrivate,
 };
 
 export default LiveSessionController;

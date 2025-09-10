@@ -27,5 +27,10 @@ router.get(
     auth(USER_ROLE.creator, USER_ROLE.user),
     liveSessionController.getAllLiveSessions
 );
+router.patch(
+    '/toggle-private-public/:id',
+    auth(USER_ROLE.creator, USER_ROLE.user),
+    liveSessionController.togglePublicPrivate
+);
 
 export const liveSessionRoutes = router;

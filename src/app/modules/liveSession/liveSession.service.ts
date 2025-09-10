@@ -136,11 +136,25 @@ const togglePublicPrivate = async (profileId: string, id: string) => {
     return result;
 };
 
+const deleteLive = async (profileId: string, id: string) => {
+    const result = await LiveSession.findOneAndDelete({
+        _id: id,
+        creator: profileId,
+    });
+    if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Live session not found');
+    }
+
+    if (result.recording_presigned_url) {
+        deleteFileFromS3(result.recording_presigned_url);
+    }
+};
 const LiveSessionServices = {
     createLiveSession,
     endSession,
     updateLiveSessionData,
     getAllLiveSessions,
     togglePublicPrivate,
+    deleteLive,
 };
 export default LiveSessionServices;
