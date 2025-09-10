@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import AppError from '../../error/appError';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import { StreamRoom } from '../liveStreaming/liveStreaming.model';
@@ -81,6 +82,75 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
                 session_id: 1,
                 room_id: 1,
                 status: 1,
+                isPublic: 1,
+                recording_presigned_url: 1,
+                session_started_at: 1,
+                duration: 1,
+                coverImage: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                creator: {
+                    name: '$creatorDetails.name',
+                    profile_image: '$creatorDetails.profile_image',
+                },
+            },
+        },
+        { $sort: { createdAt: -1 } },
+
+        {
+            $facet: {
+                result: [{ $skip: skip }, { $limit: limit }],
+                totalCount: [{ $count: 'total' }],
+            },
+        },
+    ]);
+
+    const result = aggResult[0]?.result || [];
+    const total = aggResult[0]?.totalCount[0]?.total || 0;
+    const totalPage = Math.ceil(total / limit);
+
+    return {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPage,
+        },
+        result,
+    };
+};
+const getMyLivesessions = async (
+    profileId: string,
+    query: Record<string, unknown>
+) => {
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const aggResult = await LiveSession.aggregate([
+        {
+            $match: {
+                status: ENUM_LIVE_SESSION.ENDED,
+                creator: new mongoose.Types.ObjectId(profileId),
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creator',
+                foreignField: '_id',
+                as: 'creatorDetails',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                description: 1,
+                session_id: 1,
+                room_id: 1,
+                status: 1,
+                isPublic: 1,
                 recording_presigned_url: 1,
                 session_started_at: 1,
                 duration: 1,
@@ -156,5 +226,6 @@ const LiveSessionServices = {
     getAllLiveSessions,
     togglePublicPrivate,
     deleteLive,
+    getMyLivesessions,
 };
 export default LiveSessionServices;

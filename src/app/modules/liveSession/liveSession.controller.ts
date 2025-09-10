@@ -38,6 +38,19 @@ const getAllLiveSessions = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getMyLivesessions = catchAsync(async (req, res) => {
+    const result = await LiveSessionServices.getMyLivesessions(
+        req.user.profileId,
+        req.query
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Live session retrieved successfully',
+        data: result,
+    });
+});
 const togglePublicPrivate = catchAsync(async (req, res) => {
     const result = await LiveSessionServices.togglePublicPrivate(
         req.user.profileId,
@@ -53,11 +66,26 @@ const togglePublicPrivate = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const deleteLive = catchAsync(async (req, res) => {
+    const result = await LiveSessionServices.deleteLive(
+        req.user.profileId,
+        req.params.id
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Live deleted successfully',
+        data: result,
+    });
+});
 
 const LiveSessionController = {
     updateLiveSessionData,
     getAllLiveSessions,
     togglePublicPrivate,
+    deleteLive,
+    getMyLivesessions,
 };
 
 export default LiveSessionController;

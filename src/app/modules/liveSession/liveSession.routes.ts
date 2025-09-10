@@ -27,10 +27,20 @@ router.get(
     auth(USER_ROLE.creator, USER_ROLE.user),
     liveSessionController.getAllLiveSessions
 );
+router.get(
+    '/get-my-previous-live',
+    auth(USER_ROLE.creator),
+    liveSessionController.getMyLivesessions
+);
 router.patch(
     '/toggle-private-public/:id',
     auth(USER_ROLE.creator, USER_ROLE.user),
     liveSessionController.togglePublicPrivate
+);
+router.post(
+    '/delete/:id',
+    auth(USER_ROLE.creator),
+    liveSessionController.deleteLive
 );
 
 export const liveSessionRoutes = router;
