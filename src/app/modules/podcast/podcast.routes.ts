@@ -12,13 +12,6 @@ const router = express.Router();
 router.post(
     '/create',
     auth(USER_ROLE.creator),
-    // uploadFile(),
-    // (req: Request, res: Response, next: NextFunction) => {
-    //     if (req.body.data) {
-    //         req.body = JSON.parse(req.body.data);
-    //     }
-    //     next();
-    // },
     validateRequest(podcastValidation.createPodcastValidationSchema),
     podcastController.createPodcast
 );

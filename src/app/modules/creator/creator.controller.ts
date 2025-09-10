@@ -52,6 +52,7 @@ const getTopCreators = catchAsync(async (req, res) => {
         data: result,
     });
 });
+
 const approveRejectCreator = catchAsync(async (req, res) => {
     const result = await CreatorService.approveRejectCreator(
         req.params.id,

@@ -60,6 +60,18 @@ const getMyLiveRoom = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const startRecording = catchAsync(async (req, res) => {
+    const result = await liveStreamingServices.startRecording(
+        req.user.profileId,
+        req.params.id
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Recording started successfully',
+        data: result,
+    });
+});
 
 const LiveStreamingController = {
     createStreamingRoom,
@@ -67,5 +79,6 @@ const LiveStreamingController = {
     inviteUser,
     endLiveAndStoreRecordings,
     getMyLiveRoom,
+    startRecording,
 };
 export default LiveStreamingController;

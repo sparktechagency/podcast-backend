@@ -7,6 +7,7 @@ import { categoryRoutes } from '../modules/category/category.routes';
 import { commentRoutes } from '../modules/comment/comment.routes';
 import { creatorRoutes } from '../modules/creator/creator.routes';
 import { feedbackRoutes } from '../modules/feedback/feedback.routes';
+import { liveSessionRoutes } from '../modules/liveSession/liveSession.routes';
 import { liveStreamingRoutes } from '../modules/liveStreaming/liveStreaming.routes';
 import { ManageRoutes } from '../modules/manage-web/manage.routes';
 import { metaRoutes } from '../modules/meta/meta.routes';
@@ -100,6 +101,10 @@ const moduleRoutes = [
     {
         path: '/live-stream',
         router: liveStreamingRoutes,
+    },
+    {
+        path: '/live-session',
+        router: liveSessionRoutes,
     },
     {
         path: '/report',

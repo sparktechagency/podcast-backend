@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
-import AppError from '../../error/appError';
-import { IPodcast } from './podcast.interface';
-import Podcast from './podcast.model';
+import { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { CACHE_TTL_SECONDS } from '../../constant';
+import AppError from '../../error/appError';
+import { createCacheKey } from '../../helper/createCacheKey';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
+import redis from '../../utilities/redisClient';
+import Album from '../album/album.model';
+import Bookmark from '../bookmark/bookmark.model';
 import Category from '../category/category.model';
 import SubCategory from '../subCategory/subCategory.model';
-import redis from '../../utilities/redisClient';
-import { createCacheKey } from '../../helper/createCacheKey';
-import { CACHE_TTL_SECONDS } from '../../constant';
-import WatchHistory from '../watchHistory/watchHistory.model';
-import Album from '../album/album.model';
-import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
-import mongoose from 'mongoose';
-import Bookmark from '../bookmark/bookmark.model';
-import { JwtPayload } from 'jsonwebtoken';
 import { USER_ROLE } from '../user/user.constant';
+import WatchHistory from '../watchHistory/watchHistory.model';
+import { IPodcast } from './podcast.interface';
+import Podcast from './podcast.model';
 const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
@@ -33,9 +33,16 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
     if (payload.podcast_url) {
         payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
     }
-    if (payload.podcast_url) {
-        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
-    }
+
+    // if (payload.podcast_url) {
+    //     const rawKey = payload.podcast_url.replace(/^https?:\/\/[^/]+\/?/, '');
+    //     console.log('raw key', rawKey);
+    //     const hlsUrl = await startMediaConvertJob(rawKey);
+
+    //     // Replace podcast_url with HLS URL
+    //     payload.podcast_url = hlsUrl;
+    // }
+
     if (payload.coverImage) {
         payload.coverImage = getCloudFrontUrl(payload.coverImage);
     }
@@ -865,27 +872,182 @@ const getMyPodcasts = async (
 //     return `feed:${userId}:${lat ?? 'any'}:${lng ?? 'any'}:${hash}`;
 // };
 
+// const getPodcastFeedForUser = async (
+//     userId: string,
+//     query: Record<string, unknown>
+// ) => {
+//     const cursor: string = query.cursor as string;
+//     const lng = (query.lng as number) || undefined;
+//     const lat = (query.lat as number) || undefined;
+//     const categoryId = query.category as string | undefined;
+//     const subCategoryId = query.subCategory as string | undefined;
+//     const searchTerm = query.searchTerm as string | undefined;
+//     const limit = 20;
+//     const cursorDate = cursor ? new Date(cursor) : new Date();
+//     // Step 2: Parallel Redis get for liked pods & bookmarks+watched caches
+//     const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
+//         redis.get(`likedPods:${userId}`),
+//         redis.get(`bookmarksAndWatched:${userId}`),
+//     ]);
+
+//     let likedPods: any[] = [];
+//     if (cachedLikedPods) {
+//         likedPods = JSON.parse(cachedLikedPods);
+//     } else {
+//         likedPods = await Podcast.find({ 'likers.user': userId })
+//             .select('category subCategory')
+//             .limit(50)
+//             .lean();
+//         await redis.set(
+//             `likedPods:${userId}`,
+//             JSON.stringify(likedPods),
+//             'EX',
+//             300
+//         );
+//     }
+
+//     let bookmarks: any[] = [];
+//     let watched: any[] = [];
+//     if (cachedBookmarksAndWatched) {
+//         const parsed = JSON.parse(cachedBookmarksAndWatched);
+//         bookmarks = parsed.bookmarks || [];
+//         watched = parsed.watched || [];
+//     } else {
+//         [bookmarks, watched] = await Promise.all([
+//             Bookmark.find({ user: userId }).select('podcast').lean(),
+//             WatchHistory.find({ user: userId }).select('podcast').lean(),
+//         ]);
+//         await redis.set(
+//             `bookmarksAndWatched:${userId}`,
+//             JSON.stringify({ bookmarks, watched }),
+//             'EX',
+//             300
+//         );
+//     }
+
+//     const bookmarkedPodcastIds = new Set(
+//         bookmarks.map((b) => b.podcast.toString())
+//     );
+//     const watchedIds = watched.map((w) => w.podcast.toString());
+
+//     // Step 3: Prepare top categories & subCategories for personalization
+//     const topCategories = [
+//         ...new Set(likedPods.map((p) => p.category?.toString())),
+//     ];
+//     const topSubCategories = [
+//         ...new Set(likedPods.map((p) => p.subCategory?.toString())),
+//     ];
+
+//     // Step 4: Build main Mongo query object with filters & personalization
+//     const queryData: any = {
+//         createdAt: { $lt: cursorDate },
+//         _id: { $nin: watchedIds },
+//         $and: [],
+//     };
+
+//     if (
+//         typeof lat === 'number' &&
+//         !isNaN(lat) &&
+//         typeof lng === 'number' &&
+//         !isNaN(lng)
+//     ) {
+//         queryData.location = {
+//             $nearSphere: {
+//                 $geometry: { type: 'Point', coordinates: [lng, lat] },
+//                 $maxDistance: 100 * 1000, // 100 km radius
+//             },
+//         };
+//     }
+
+//     if (categoryId) queryData.$and.push({ category: categoryId });
+//     if (subCategoryId) queryData.$and.push({ subCategory: subCategoryId });
+//     if (searchTerm)
+//         queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
+//     if (query.reels) queryData.$and.push({ duration: { $lte: 60 } });
+
+//     if (!categoryId && !subCategoryId && !searchTerm) {
+//         const ors = [];
+//         if (topCategories.length)
+//             ors.push({ category: { $in: topCategories } });
+//         if (topSubCategories.length)
+//             ors.push({ subCategory: { $in: topSubCategories } });
+//         if (ors.length) queryData.$and.push({ $or: ors });
+//     }
+
+//     if (queryData.$and.length === 0) delete queryData.$and;
+
+//     const sortField = query.popular ? 'totalView' : 'createdAt';
+
+//     // Step 5: Query podcasts with minimal fields and minimal population
+//     const podcasts: any = await Podcast.find(queryData)
+//         .sort({ [sortField]: -1 })
+//         .limit(limit)
+//         .select(
+//             'title coverImage podcast_url category subCategory location duration createdAt creator'
+//         )
+//         .populate('category', 'name') // only name & _id
+//         .populate('subCategory', 'name') // only name & _id
+//         .populate('creator', 'name') // only name & _id
+//         .lean();
+
+//     // Step 6: Optional firstPodcastId logic: fetch separately and add on top
+//     if (query.firstPodcastId) {
+//         const firstPodcast = await Podcast.findById(query.firstPodcastId)
+//             .select(
+//                 'title coverImage podcast_url category subCategory location duration createdAt creator'
+//             )
+//             .populate('category', 'name')
+//             .populate('subCategory', 'name')
+//             .populate('creator', 'name')
+//             .lean();
+//         if (firstPodcast) {
+//             const isBookmarked = bookmarkedPodcastIds.has(
+//                 firstPodcast._id.toString()
+//             );
+//             podcasts.unshift({ ...firstPodcast, isBookmark: isBookmarked });
+//         }
+//     }
+//     // Step 7: Add bookmark + like flag to each podcast
+//     const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
+
+//     const podcastsWithFlags = podcasts.map((podcast: any) => ({
+//         ...podcast,
+//         isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
+//         isLike: likedPodcastIds.has(podcast._id.toString()),
+//     }));
+
+//     // Step 8: Pagination cursor for next page
+//     const nextCursor =
+//         podcastsWithFlags.length === limit
+//             ? podcastsWithFlags[
+//                   podcastsWithFlags.length - 1
+//               ].createdAt.toISOString()
+//             : null;
+//     const response = {
+//         podcasts: podcastsWithFlags,
+//         nextCursor,
+//         hasMore: Boolean(nextCursor),
+//     };
+
+//     // Step 9: Cache final response for 3 minutes
+//     // await redis.set(cacheKey, JSON.stringify(response), 'EX', 180);
+
+//     return response;
+// };
+
 const getPodcastFeedForUser = async (
     userId: string,
     query: Record<string, unknown>
 ) => {
-    const cursor: string = query.cursor as string;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const skip = (page - 1) * limit;
+
     const lng = (query.lng as number) || undefined;
     const lat = (query.lat as number) || undefined;
     const categoryId = query.category as string | undefined;
     const subCategoryId = query.subCategory as string | undefined;
     const searchTerm = query.searchTerm as string | undefined;
-    const limit = 20;
-    const cursorDate = cursor ? new Date(cursor) : new Date();
-
-    // // Create a cache key for final results based on userId, lat, lng and query params
-    // const cacheKey = createCacheKeyForFeed(userId, lat, lng, query);
-
-    // // Step 1: Try to get final result from cache (this reduces DB hits dramatically)
-    // const cachedResult = await redis.get(cacheKey);
-    // if (cachedResult) {
-    //     return JSON.parse(cachedResult);
-    // }
 
     // Step 2: Parallel Redis get for liked pods & bookmarks+watched caches
     const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
@@ -943,7 +1105,6 @@ const getPodcastFeedForUser = async (
 
     // Step 4: Build main Mongo query object with filters & personalization
     const queryData: any = {
-        createdAt: { $lt: cursorDate },
         _id: { $nin: watchedIds },
         $and: [],
     };
@@ -984,6 +1145,7 @@ const getPodcastFeedForUser = async (
     // Step 5: Query podcasts with minimal fields and minimal population
     const podcasts: any = await Podcast.find(queryData)
         .sort({ [sortField]: -1 })
+        .skip(skip)
         .limit(limit)
         .select(
             'title coverImage podcast_url category subCategory location duration createdAt creator'
@@ -1011,20 +1173,6 @@ const getPodcastFeedForUser = async (
         }
     }
 
-    // // Step 7: Add bookmark flag to each podcast
-    // const podcastsWithBookmarkFlag = podcasts.map((podcast: any) => ({
-    //     ...podcast,
-    //     isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
-    // }));
-
-    // // Step 8: Pagination cursor for next page
-    // const nextCursor =
-    //     podcastsWithBookmarkFlag.length === limit
-    //         ? podcastsWithBookmarkFlag[
-    //               podcastsWithBookmarkFlag.length - 1
-    //           ].createdAt.toISOString()
-    //         : null;
-
     // Step 7: Add bookmark + like flag to each podcast
     const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
 
@@ -1034,21 +1182,18 @@ const getPodcastFeedForUser = async (
         isLike: likedPodcastIds.has(podcast._id.toString()),
     }));
 
-    // Step 8: Pagination cursor for next page
-    const nextCursor =
-        podcastsWithFlags.length === limit
-            ? podcastsWithFlags[
-                  podcastsWithFlags.length - 1
-              ].createdAt.toISOString()
-            : null;
+    // Step 8: Pagination info
+    const totalPodcasts = await Podcast.countDocuments(queryData);
+    const totalPages = Math.ceil(totalPodcasts / limit);
+
     const response = {
         podcasts: podcastsWithFlags,
-        nextCursor,
-        hasMore: Boolean(nextCursor),
+        page,
+        limit,
+        totalPages,
+        totalPodcasts,
+        hasMore: page < totalPages,
     };
-
-    // Step 9: Cache final response for 3 minutes
-    // await redis.set(cacheKey, JSON.stringify(response), 'EX', 180);
 
     return response;
 };

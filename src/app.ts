@@ -16,6 +16,8 @@ import {
 import sendContactUsEmail from './app/helper/sendContactUsEmail';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import notFound from './app/middlewares/notFound';
+import { ILiveSession } from './app/modules/liveSession/liveSession.interface';
+import LiveSessionServices from './app/modules/liveSession/liveSession.service';
 import router from './app/routes';
 import redis from './app/utilities/redisClient';
 const app: Application = express();
@@ -56,6 +58,44 @@ app.post('/contact-us', sendContactUsEmail);
 
 app.get('/', async (req, res) => {
     res.send({ message: 'Welcome to podcast  22222' });
+});
+
+app.post('/webhooks/100ms', async (req, res) => {
+    const event = req.body;
+
+    console.log('100ms webhook:', event.type);
+    console.log('evnt ', event);
+    console.log('event data---->', event.data);
+    console.log('dkfjdkjfkd==========>', event.data.recording_assets);
+    console.log('end ========================>');
+
+    if (event.type === 'session.open.success') {
+        const data = event.data;
+        const payload: Partial<ILiveSession> = {
+            room_id: data.room_id,
+            session_id: data.session_id,
+            session_started_at: data.session_started_at,
+        };
+        await LiveSessionServices.createLiveSession(payload);
+    }
+    if (event.type === 'stream.recording.success') {
+        const data = event.data;
+        await LiveSessionServices.endSession(
+            data.session_id,
+            data.recording_presigned_url,
+            data.duration
+        );
+    }
+
+    if (event.type === 'recording.success') {
+        const assets = event.data.recording_assets;
+
+        // Save recordings in DB
+        // Example: store asset.url for frontend to access
+        console.log('Recording ready:', assets);
+    }
+
+    res.sendStatus(200);
 });
 
 app.get('/redis-health', async (req, res) => {
@@ -101,6 +141,22 @@ app.post('/generate-multiple-presigned-urls', async (req, res) => {
         });
     }
 });
+
+// import {
+//     DescribeEndpointsCommand,
+//     MediaConvertClient,
+// } from '@aws-sdk/client-mediaconvert';
+
+// const client = new MediaConvertClient({ region: 'us-east-1' });
+
+// async function getEndpoint() {
+//     const response = await client.send(
+//         new DescribeEndpointsCommand({ MaxResults: 1 })
+//     );
+//     console.log('Your MediaConvert endpoint:', response.Endpoints?.[0]?.Url);
+// }
+
+// getEndpoint();
 
 // global error handler
 app.use(globalErrorHandler);
