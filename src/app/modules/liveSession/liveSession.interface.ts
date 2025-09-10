@@ -13,4 +13,5 @@ export interface ILiveSession {
     status: (typeof ENUM_LIVE_SESSION)[keyof typeof ENUM_LIVE_SESSION];
     recording_presigned_url: string;
     duration: number;
+    isPublic: boolean;
 }

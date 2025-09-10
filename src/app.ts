@@ -63,12 +63,6 @@ app.get('/', async (req, res) => {
 app.post('/webhooks/100ms', async (req, res) => {
     const event = req.body;
 
-    console.log('100ms webhook:', event.type);
-    console.log('evnt ', event);
-    console.log('event data---->', event.data);
-    console.log('dkfjdkjfkd==========>', event.data.recording_assets);
-    console.log('end ========================>');
-
     if (event.type === 'session.open.success') {
         const data = event.data;
         const payload: Partial<ILiveSession> = {
@@ -78,11 +72,17 @@ app.post('/webhooks/100ms', async (req, res) => {
         };
         await LiveSessionServices.createLiveSession(payload);
     }
-    if (event.type === 'stream.recording.success') {
+    if (event.type === 'beam.recording.success') {
         const data = event.data;
+        const path = data.recording_path.replace(
+            's3://podcast-appp-bucket',
+            ''
+        );
+        const cloudFontUrl = `${process.env.CLOUDFRONT_URL}${path}`;
+
         await LiveSessionServices.endSession(
             data.session_id,
-            data.recording_presigned_url,
+            cloudFontUrl,
             data.duration
         );
     }

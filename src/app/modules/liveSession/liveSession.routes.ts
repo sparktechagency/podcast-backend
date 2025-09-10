@@ -9,7 +9,7 @@ import liveSessionValidations from './liveSession.validation';
 const router = express.Router();
 
 router.patch(
-    '/update',
+    '/update/:id',
     auth(USER_ROLE.creator),
     uploadFile(),
     (req, res, next) => {

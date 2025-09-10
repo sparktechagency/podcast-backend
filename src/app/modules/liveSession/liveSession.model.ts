@@ -53,9 +53,13 @@ const liveSessionSchema: Schema<ILiveSession> = new Schema(
             type: String,
             default: '',
         },
+        isPublic: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
-        timestamps: true, // Adds createdAt and updatedAt fields
+        timestamps: true,
     }
 );
 

@@ -19,17 +19,10 @@ import { StreamRoom } from './liveStreaming.model';
 const createStreamingRoom = async (profileId: string) => {
     const liveRoom = await StreamRoom.findOne({
         host: profileId,
-        $or: [
-            { status: ENUM_LIVE_STREAM_STATUS.live },
-            { status: ENUM_LIVE_STREAM_STATUS.wating },
-        ],
     });
 
     if (liveRoom) {
-        throw new AppError(
-            httpStatus.NOT_FOUND,
-            "You can't able to start another live , because you already created a room for live , please join with that"
-        );
+        throw new AppError(httpStatus.NOT_FOUND, 'You already created a room');
     }
 
     const name = generateRoomName();

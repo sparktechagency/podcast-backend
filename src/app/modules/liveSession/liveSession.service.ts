@@ -12,6 +12,7 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
     }
     payload.streamRoom = streamRoom._id;
+    payload.creator = streamRoom.host;
     await LiveSession.create(payload);
 };
 
@@ -117,10 +118,29 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
     };
 };
 
+// private , public
+const togglePublicPrivate = async (profileId: string, id: string) => {
+    const liveSession = await LiveSession.findOne({
+        creator: profileId,
+        _id: id,
+    });
+    if (!liveSession) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Live session not found');
+    }
+
+    const result = await LiveSession.findByIdAndUpdate(
+        id,
+        { isPublic: !liveSession.isPublic },
+        { new: true, runValidators: true }
+    );
+    return result;
+};
+
 const LiveSessionServices = {
     createLiveSession,
     endSession,
     updateLiveSessionData,
     getAllLiveSessions,
+    togglePublicPrivate,
 };
 export default LiveSessionServices;
