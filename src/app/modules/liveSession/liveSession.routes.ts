@@ -7,7 +7,7 @@ import liveSessionController from './liveSession.controller';
 import liveSessionValidations from './liveSession.validation';
 
 const router = express.Router();
-
+//
 router.patch(
     '/update',
     auth(USER_ROLE.creator),
