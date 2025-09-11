@@ -3,7 +3,6 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import AppError from '../../error/appError';
 import { createCacheKey } from '../../helper/createCacheKey';
 import redis from '../../utilities/redisClient';
-import Podcast from '../podcast/podcast.model';
 import { User } from '../user/user.model';
 import { ICreator } from './creator.interface';
 import Creator from './creator.model';
@@ -163,29 +162,142 @@ const getAllCreators = async (query: Record<string, unknown>) => {
 //     };
 // };
 
+// const getTopCreators = async (query: Record<string, unknown>) => {
+//     const page = parseInt(query.page as string) || 1;
+//     const limit = parseInt(query.limit as string) || 10;
+//     const skip = (page - 1) * limit;
+
+//     const topCreators = await Podcast.aggregate([
+//         {
+//             $group: {
+//                 _id: '$creator',
+//                 totalViews: { $sum: '$totalView' },
+//             },
+//         },
+//         { $sort: { totalViews: -1 } },
+//         { $limit: 10 },
+//         {
+//             $lookup: {
+//                 from: 'creators',
+//                 localField: '_id',
+//                 foreignField: '_id',
+//                 as: 'creatorInfo',
+//             },
+//         },
+//         { $unwind: '$creatorInfo' },
+//         {
+//             $lookup: {
+//                 from: 'podcasts',
+//                 localField: '_id',
+//                 foreignField: 'creator',
+//                 as: 'creatorPodcasts',
+//             },
+//         },
+//         {
+//             $addFields: {
+//                 latestPodcast: {
+//                     $arrayElemAt: [
+//                         {
+//                             $sortArray: {
+//                                 input: '$creatorPodcasts',
+//                                 sortBy: { createdAt: -1 },
+//                             },
+//                         }, // Sort podcasts by createdAt descending
+//                         0, // Take the first element (most recent podcast)
+//                     ],
+//                 },
+//             },
+//         },
+//         {
+//             $project: {
+//                 _id: 0,
+//                 creatorId: '$_id',
+//                 totalViews: 1,
+//                 name: '$creatorInfo.name',
+//                 email: '$creatorInfo.email',
+//                 profile_image: '$creatorInfo.profile_image',
+//                 profile_cover: '$creatorInfo.profile_cover',
+//                 phone: '$creatorInfo.phone',
+//                 location: '$creatorInfo.location',
+//                 donationLink: '$creatorInfo.donationLink',
+//                 randomPodcast: {
+//                     title: '$randomPodcast.title',
+//                     description: '$randomPodcast.description',
+//                     podcast_url: '$randomPodcast.podcast_url',
+//                     coverImage: '$randomPodcast.coverImage',
+//                 },
+//             },
+//         },
+//         {
+//             $facet: {
+//                 result: [{ $skip: skip }, { $limit: limit }],
+//                 totalCount: [{ $count: 'total' }],
+//             },
+//         },
+//     ]);
+
+//     const result = topCreators[0]?.result || [];
+//     const total = topCreators[0]?.totalCount[0]?.total || 0;
+//     const totalPage = Math.ceil(total / limit);
+
+//     const meta = {
+//         page,
+//         limit,
+//         total,
+//         totalPage,
+//     };
+
+//     return {
+//         meta,
+//         result,
+//     };
+// };
+
 const getTopCreators = async (query: Record<string, unknown>) => {
     const page = parseInt(query.page as string) || 1;
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const topCreators = await Podcast.aggregate([
-        {
-            $group: {
-                _id: '$creator',
-                totalViews: { $sum: '$totalView' },
-            },
-        },
-        { $sort: { totalViews: -1 } },
-        { $limit: 10 },
+    const topCreators = await Creator.aggregate([
+        // Lookup active live session
         {
             $lookup: {
-                from: 'creators',
-                localField: '_id',
-                foreignField: '_id',
-                as: 'creatorInfo',
+                from: 'livesessions',
+                let: { creatorId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$creator', '$$creatorId'] },
+                                    { $eq: ['$status', 'active'] }, // ENUM_LIVE_SESSION.ACTIVE
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: 'liveSession',
             },
         },
-        { $unwind: '$creatorInfo' },
+        {
+            $addFields: {
+                isLive: { $gt: [{ $size: '$liveSession' }, 0] },
+                liveSession: { $arrayElemAt: ['$liveSession', 0] },
+            },
+        },
+
+        // Lookup stream room if live
+        {
+            $lookup: {
+                from: 'streamrooms',
+                localField: 'liveSession.streamRoom',
+                foreignField: '_id',
+                as: 'streamRoom',
+            },
+        },
+        { $unwind: { path: '$streamRoom', preserveNullAndEmptyArrays: true } },
+
+        // Lookup podcasts for total views
         {
             $lookup: {
                 from: 'podcasts',
@@ -196,6 +308,7 @@ const getTopCreators = async (query: Record<string, unknown>) => {
         },
         {
             $addFields: {
+                totalViews: { $sum: '$creatorPodcasts.totalView' },
                 latestPodcast: {
                     $arrayElemAt: [
                         {
@@ -203,32 +316,51 @@ const getTopCreators = async (query: Record<string, unknown>) => {
                                 input: '$creatorPodcasts',
                                 sortBy: { createdAt: -1 },
                             },
-                        }, // Sort podcasts by createdAt descending
-                        0, // Take the first element (most recent podcast)
+                        },
+                        0,
                     ],
                 },
             },
         },
+
+        // Sort: live first, then by totalViews
+        {
+            $sort: { isLive: -1, totalViews: -1 },
+        },
+
+        // Select fields
         {
             $project: {
                 _id: 0,
                 creatorId: '$_id',
+                name: 1,
+                email: 1,
+                profile_image: 1,
+                profile_cover: 1,
+                phone: 1,
+                location: 1,
+                donationLink: 1,
+                isLive: 1,
                 totalViews: 1,
-                name: '$creatorInfo.name',
-                email: '$creatorInfo.email',
-                profile_image: '$creatorInfo.profile_image',
-                profile_cover: '$creatorInfo.profile_cover',
-                phone: '$creatorInfo.phone',
-                location: '$creatorInfo.location',
-                donationLink: '$creatorInfo.donationLink',
-                randomPodcast: {
-                    title: '$randomPodcast.title',
-                    description: '$randomPodcast.description',
-                    podcast_url: '$randomPodcast.podcast_url',
-                    coverImage: '$randomPodcast.coverImage',
+                liveSession: {
+                    session_id: '$liveSession.session_id',
+                    name: '$liveSession.name',
+                    description: '$liveSession.description',
+                    coverImage: '$liveSession.coverImage',
+                    session_started_at: '$liveSession.session_started_at',
+                    duration: '$liveSession.duration',
+                },
+                streamRoom: 1,
+                latestPodcast: {
+                    title: '$latestPodcast.title',
+                    description: '$latestPodcast.description',
+                    podcast_url: '$latestPodcast.podcast_url',
+                    coverImage: '$latestPodcast.coverImage',
                 },
             },
         },
+
+        // Pagination
         {
             $facet: {
                 result: [{ $skip: skip }, { $limit: limit }],
@@ -248,12 +380,8 @@ const getTopCreators = async (query: Record<string, unknown>) => {
         totalPage,
     };
 
-    return {
-        meta,
-        result,
-    };
+    return { meta, result };
 };
-
 const approveRejectCreator = async (id: string, isApproved: boolean) => {
     const creator = await Creator.findById(id);
     if (!creator) {

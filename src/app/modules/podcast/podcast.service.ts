@@ -12,6 +12,7 @@ import redis from '../../utilities/redisClient';
 import Album from '../album/album.model';
 import Bookmark from '../bookmark/bookmark.model';
 import Category from '../category/category.model';
+import Creator from '../creator/creator.model';
 import SubCategory from '../subCategory/subCategory.model';
 import { USER_ROLE } from '../user/user.constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
@@ -1285,24 +1286,114 @@ const getHomeData = async () => {
             .sort({ createdAt: -1 })
             .limit(10),
         Album.find().sort({ updatedAt: -1 }).limit(10),
-        Podcast.aggregate([
-            {
-                $group: {
-                    _id: '$creator',
-                    totalViews: { $sum: '$totalView' },
-                },
-            },
-            { $sort: { totalViews: -1 } },
-            { $limit: 10 },
+        // Podcast.aggregate([
+        //     {
+        //         $group: {
+        //             _id: '$creator',
+        //             totalViews: { $sum: '$totalView' },
+        //         },
+        //     },
+        //     { $sort: { totalViews: -1 } },
+        //     { $limit: 10 },
+        //     {
+        //         $lookup: {
+        //             from: 'creators',
+        //             localField: '_id',
+        //             foreignField: '_id',
+        //             as: 'creatorInfo',
+        //         },
+        //     },
+        //     { $unwind: '$creatorInfo' },
+        //     {
+        //         $lookup: {
+        //             from: 'podcasts',
+        //             localField: '_id',
+        //             foreignField: 'creator',
+        //             as: 'creatorPodcasts',
+        //         },
+        //     },
+        //     {
+        //         $addFields: {
+        //             latestPodcast: {
+        //                 $arrayElemAt: [
+        //                     {
+        //                         $sortArray: {
+        //                             input: '$creatorPodcasts',
+        //                             sortBy: { createdAt: -1 },
+        //                         },
+        //                     }, // Sort podcasts by createdAt descending
+        //                     0, // Take the first element (most recent podcast)
+        //                 ],
+        //             },
+        //         },
+        //     },
+        //     {
+        //         $project: {
+        //             _id: 0,
+        //             creatorId: '$_id',
+        //             totalViews: 1,
+        //             name: '$creatorInfo.name',
+        //             email: '$creatorInfo.email',
+        //             profile_image: '$creatorInfo.profile_image',
+        //             profile_cover: '$creatorInfo.profile_cover',
+        //             phone: '$creatorInfo.phone',
+        //             location: '$creatorInfo.location',
+        //             donationLink: '$creatorInfo.donationLink',
+        //             randomPodcast: {
+        //                 title: '$randomPodcast.title',
+        //                 description: '$randomPodcast.description',
+        //                 podcast_url: '$randomPodcast.podcast_url',
+        //                 coverImage: '$randomPodcast.coverImage',
+        //             },
+        //         },
+        //     },
+        // ]),
+
+        Creator.aggregate([
+            // Lookup active live session
             {
                 $lookup: {
-                    from: 'creators',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'creatorInfo',
+                    from: 'livesessions',
+                    let: { creatorId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$creator', '$$creatorId'] },
+                                        { $eq: ['$status', 'active'] }, // ENUM_LIVE_SESSION.ACTIVE
+                                    ],
+                                },
+                            },
+                        },
+                    ],
+                    as: 'liveSession',
                 },
             },
-            { $unwind: '$creatorInfo' },
+            {
+                $addFields: {
+                    isLive: { $gt: [{ $size: '$liveSession' }, 0] },
+                    liveSession: { $arrayElemAt: ['$liveSession', 0] },
+                },
+            },
+
+            // Lookup stream room if live
+            {
+                $lookup: {
+                    from: 'streamrooms',
+                    localField: 'liveSession.streamRoom',
+                    foreignField: '_id',
+                    as: 'streamRoom',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$streamRoom',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+
+            // Lookup podcasts for total views
             {
                 $lookup: {
                     from: 'podcasts',
@@ -1313,6 +1404,7 @@ const getHomeData = async () => {
             },
             {
                 $addFields: {
+                    totalViews: { $sum: '$creatorPodcasts.totalView' },
                     latestPodcast: {
                         $arrayElemAt: [
                             {
@@ -1320,31 +1412,53 @@ const getHomeData = async () => {
                                     input: '$creatorPodcasts',
                                     sortBy: { createdAt: -1 },
                                 },
-                            }, // Sort podcasts by createdAt descending
-                            0, // Take the first element (most recent podcast)
+                            },
+                            0,
                         ],
                     },
                 },
             },
+
+            // Sort: live first, then by totalViews
+            {
+                $sort: { isLive: -1, totalViews: -1 },
+            },
+
+            // Select fields
             {
                 $project: {
                     _id: 0,
                     creatorId: '$_id',
+                    name: 1,
+                    email: 1,
+                    profile_image: 1,
+                    profile_cover: 1,
+                    phone: 1,
+                    location: 1,
+                    donationLink: 1,
+                    isLive: 1,
                     totalViews: 1,
-                    name: '$creatorInfo.name',
-                    email: '$creatorInfo.email',
-                    profile_image: '$creatorInfo.profile_image',
-                    profile_cover: '$creatorInfo.profile_cover',
-                    phone: '$creatorInfo.phone',
-                    location: '$creatorInfo.location',
-                    donationLink: '$creatorInfo.donationLink',
-                    randomPodcast: {
-                        title: '$randomPodcast.title',
-                        description: '$randomPodcast.description',
-                        podcast_url: '$randomPodcast.podcast_url',
-                        coverImage: '$randomPodcast.coverImage',
+                    liveSession: {
+                        session_id: '$liveSession.session_id',
+                        name: '$liveSession.name',
+                        description: '$liveSession.description',
+                        coverImage: '$liveSession.coverImage',
+                        session_started_at: '$liveSession.session_started_at',
+                        duration: '$liveSession.duration',
+                    },
+                    streamRoom: 1,
+                    latestPodcast: {
+                        title: '$latestPodcast.title',
+                        description: '$latestPodcast.description',
+                        podcast_url: '$latestPodcast.podcast_url',
+                        coverImage: '$latestPodcast.coverImage',
                     },
                 },
+            },
+
+            // Pagination
+            {
+                $limit: 10,
             },
         ]),
     ]);

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../error/appError';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import redis from '../../utilities/redisClient';
 import { StreamRoom } from '../liveStreaming/liveStreaming.model';
 import { ENUM_LIVE_SESSION } from './liveSession.enum';
 import { ILiveSession } from './liveSession.interface';
@@ -15,6 +16,7 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
     payload.streamRoom = streamRoom._id;
     payload.creator = streamRoom.host;
     await LiveSession.create(payload);
+    await redis.del('home:data');
 };
 
 const endSession = async (
