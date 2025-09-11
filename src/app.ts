@@ -63,7 +63,11 @@ app.get('/', async (req, res) => {
 app.post('/webhooks/100ms', async (req, res) => {
     const event = req.body;
 
-    console.log('=========================================>', event.data);
+    console.log(
+        '=========================================>',
+        event.type + ' ==========>',
+        event.data
+    );
 
     if (event.type === 'session.open.success') {
         const data = event.data;

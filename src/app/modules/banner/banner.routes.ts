@@ -1,10 +1,10 @@
-import express, { Request, Response, NextFunction } from 'express';
-import auth from '../../middlewares/auth';
-import { USER_ROLE } from '../user/user.constant';
-import validateRequest from '../../middlewares/validateRequest';
-import bannerValidations from './banner.validation';
-import bannerController from './banner.controller';
+import express, { NextFunction, Request, Response } from 'express';
 import { uploadFile } from '../../helper/mutler-s3-uploader';
+import auth from '../../middlewares/auth';
+import validateRequest from '../../middlewares/validateRequest';
+import { USER_ROLE } from '../user/user.constant';
+import bannerController from './banner.controller';
+import bannerValidations from './banner.validation';
 
 const router = express.Router();
 
@@ -24,7 +24,12 @@ router.post(
 
 router.get(
     '/get-all',
-    auth(USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.user),
+    auth(
+        USER_ROLE.admin,
+        USER_ROLE.superAdmin,
+        USER_ROLE.user,
+        USER_ROLE.creator
+    ),
     bannerController.getAllBanners
 );
 
