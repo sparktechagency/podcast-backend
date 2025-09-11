@@ -43,6 +43,7 @@ export const uploadFile = () => {
             'podcast_cover',
             'sub_category_image',
             'album_cover',
+            'liveCover',
         ];
 
         if (file.fieldname === undefined) {
@@ -162,6 +163,7 @@ export const uploadFile = () => {
         { name: 'sub_category_image', maxCount: 1 },
         { name: 'album_cover', maxCount: 1 },
         { name: 'profile_cover', maxCount: 1 },
+        { name: 'liveCover', maxCount: 1 },
     ]);
 
     return upload;

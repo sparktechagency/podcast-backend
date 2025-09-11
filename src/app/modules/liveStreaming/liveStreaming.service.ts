@@ -57,31 +57,6 @@ const createStreamingRoom = async (profileId: string) => {
     return { roomData, roomCodes };
 };
 
-// generate join token api
-// const getJoinToken = async (payload: {
-//     user_id: string;
-//     role: string;
-//     room_id: string;
-// }) => {
-//     const response = await fetch(
-//         `${HMS_ENDPOINT}/rooms/${payload.room_id}/token`,
-//         {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 Authorization: `Bearer ${getMgmToken()}`,
-//             },
-//             body: JSON.stringify({
-//                 user_id: payload.user_id,
-//                 role: payload.role,
-//             }),
-//         }
-//     );
-
-//     const data = await response.json();
-//     return data;
-// };
-
 const getJoinToken = (payload: {
     user_id: string;
     role: string;
