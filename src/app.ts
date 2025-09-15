@@ -47,6 +47,7 @@ app.use(
             'http://192.168.0.16:3003',
             'http://192.168.0.16:3004',
             'http://10.10.20.60:3003',
+            'https://admin.preachradio.com',
         ],
         credentials: true,
     })
@@ -101,11 +102,14 @@ app.post('/webhooks/100ms', async (req, res) => {
         console.log('Recording ready:', assets);
     }
 
+    console.log('End ========================================>');
+
     res.sendStatus(200);
 });
 
 app.get('/redis-health', async (req, res) => {
     try {
+        await redis.del('home:data');
         const result = await redis.ping(); // Should return "PONG"
         res.json({ status: 'ok', redis: result });
     } catch (error) {

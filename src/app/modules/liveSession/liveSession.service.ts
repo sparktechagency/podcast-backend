@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../error/appError';
@@ -32,6 +33,7 @@ const endSession = async (
             duration,
         }
     );
+    await redis.del('home:data');
 };
 
 const updateLiveSessionData = async (
@@ -62,11 +64,22 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    const matchStage: any = {
+        status: ENUM_LIVE_SESSION.ENDED,
+    };
+    if (query.isPublic == 'true') {
+        query.isPublic = true;
+    }
+    if (query.isPublic == 'false') {
+        query.isPublic = false;
+    }
+    if (query.isPublic) {
+        matchStage.isPublic = query.isPublic;
+    }
+
     const aggResult = await LiveSession.aggregate([
         {
-            $match: {
-                status: ENUM_LIVE_SESSION.ENDED,
-            },
+            $match: matchStage,
         },
         {
             $lookup: {
@@ -76,6 +89,7 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
                 as: 'creatorDetails',
             },
         },
+        { $unwind: '$creatorDetails' },
         {
             $project: {
                 _id: 1,

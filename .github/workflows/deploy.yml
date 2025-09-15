@@ -48,7 +48,7 @@ name: Deploy Node.js + Redis on EC2 with Docker
 on:
     push:
         branches:
-            - development
+            - main
 
 jobs:
     build-and-deploy:
