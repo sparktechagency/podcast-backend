@@ -22,11 +22,11 @@ router.get(
     auth(USER_ROLE.creator),
     liveStreamingController.getMyLiveRoom
 );
-router.post(
-    '/start-recording/:id',
-    auth(USER_ROLE.creator),
-    liveStreamingController.startRecording
-);
+// router.post(
+//     '/start-recording/:id',
+//     auth(USER_ROLE.creator),
+//     liveStreamingController.startRecording
+// );
 router.post(
     '/invite-user',
     auth(USER_ROLE.creator),

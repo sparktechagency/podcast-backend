@@ -206,71 +206,71 @@ const getMyLiveRoom = async (profileId: string) => {
     return room;
 };
 
-const startRecording = async (profileId: string, roomId: string) => {
-    const room = await StreamRoom.findOne({
-        host: profileId,
-        room_id: roomId,
-        status: ENUM_LIVE_STREAM_STATUS.live,
-    });
-    if (!room) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
-    }
-    try {
-        const response = await fetch(
-            `${HMS_ENDPOINT}/recordings/room/${roomId}/start`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getMgmToken()}`,
-                },
-                body: JSON.stringify({
-                    meeting_url: `https://${config.hms.subdomain}.app.100ms.live/preview/${roomId}/host?skip_preview=true`,
-                    resolution: { width: 1280, height: 720 },
-                    transcription: {
-                        enabled: true,
-                        output_modes: ['txt', 'srt', 'json'],
-                        custom_vocabulary: [
-                            '100ms',
-                            'WebSDK',
-                            'Flutter',
-                            'Sundar',
-                            'Pichai',
-                            'DALL-E',
-                        ],
-                        summary: {
-                            enabled: true,
-                            context: 'This is a general call',
-                            sections: [
-                                { title: 'Agenda', format: 'bullets' },
-                                { title: 'Key Points', format: 'bullets' },
-                                { title: 'Action Items', format: 'bullets' },
-                                { title: 'Short Summary', format: 'paragraph' },
-                            ],
-                            temperature: 0.5,
-                        },
-                    },
-                }),
-            }
-        );
+// const startRecording = async (profileId: string, roomId: string) => {
+//     const room = await StreamRoom.findOne({
+//         host: profileId,
+//         room_id: roomId,
+//         status: ENUM_LIVE_STREAM_STATUS.live,
+//     });
+//     if (!room) {
+//         throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
+//     }
+//     try {
+//         const response = await fetch(
+//             `${HMS_ENDPOINT}/recordings/room/${roomId}/start`,
+//             {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                     Authorization: `Bearer ${getMgmToken()}`,
+//                 },
+//                 body: JSON.stringify({
+//                     meeting_url: `https://${config.hms.subdomain}.app.100ms.live/preview/${roomId}/host?skip_preview=true`,
+//                     resolution: { width: 1280, height: 720 },
+//                     transcription: {
+//                         enabled: true,
+//                         output_modes: ['txt', 'srt', 'json'],
+//                         custom_vocabulary: [
+//                             '100ms',
+//                             'WebSDK',
+//                             'Flutter',
+//                             'Sundar',
+//                             'Pichai',
+//                             'DALL-E',
+//                         ],
+//                         summary: {
+//                             enabled: true,
+//                             context: 'This is a general call',
+//                             sections: [
+//                                 { title: 'Agenda', format: 'bullets' },
+//                                 { title: 'Key Points', format: 'bullets' },
+//                                 { title: 'Action Items', format: 'bullets' },
+//                                 { title: 'Short Summary', format: 'paragraph' },
+//                             ],
+//                             temperature: 0.5,
+//                         },
+//                     },
+//                 }),
+//             }
+//         );
 
-        const data = await response.json();
+//         const data = await response.json();
 
-        if (!response.ok) {
-            throw new AppError(
-                httpStatus.BAD_REQUEST,
-                data.message || 'Failed to start recording'
-            );
-        }
+//         if (!response.ok) {
+//             throw new AppError(
+//                 httpStatus.BAD_REQUEST,
+//                 data.message || 'Failed to start recording'
+//             );
+//         }
 
-        return data; // contains recording id, status, etc.
-    } catch (err: any) {
-        throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            err.message || 'Recording failed'
-        );
-    }
-};
+//         return data; // contains recording id, status, etc.
+//     } catch (err: any) {
+//         throw new AppError(
+//             httpStatus.INTERNAL_SERVER_ERROR,
+//             err.message || 'Recording failed'
+//         );
+//     }
+// };
 
 const LiveStreamingServices = {
     createStreamingRoom,
@@ -278,6 +278,6 @@ const LiveStreamingServices = {
     inviteUser,
     endLiveAndStoreRecordings,
     getMyLiveRoom,
-    startRecording,
+    // startRecording,
 };
 export default LiveStreamingServices;
