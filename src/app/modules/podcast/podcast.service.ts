@@ -10,6 +10,7 @@ import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
 import redis from '../../utilities/redisClient';
 import Album from '../album/album.model';
+import Bookmark from '../bookmark/bookmark.model';
 import Category from '../category/category.model';
 import Creator from '../creator/creator.model';
 import SubCategory from '../subCategory/subCategory.model';
@@ -493,184 +494,383 @@ const getPodcastFeedForUser = async (
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
 
+    const lng = (query.lng as number) || undefined;
+    const lat = (query.lat as number) || undefined;
     const categoryId = query.category as string | undefined;
     const subCategoryId = query.subCategory as string | undefined;
     const searchTerm = query.searchTerm as string | undefined;
 
-    // --- Filters ---
-    const filters: any = {};
-    if (categoryId) filters.category = new mongoose.Types.ObjectId(categoryId);
-    if (subCategoryId)
-        filters.subCategory = new mongoose.Types.ObjectId(subCategoryId);
-    if (searchTerm) filters.title = { $regex: new RegExp(searchTerm, 'i') };
-    if (query.reels) filters.duration = { $lte: 60 };
-
-    // --- Aggregation ---
-    const result = await Podcast.aggregate([
-        { $match: filters },
-
-        {
-            $facet: {
-                metadata: [
-                    { $count: 'totalPodcasts' }, // count total
-                    {
-                        $addFields: {
-                            page,
-                            limit,
-                            totalPages: {
-                                $ceil: {
-                                    $divide: ['$totalPodcasts', limit],
-                                },
-                            },
-                            hasMore: {
-                                $lt: [
-                                    page,
-                                    {
-                                        $ceil: {
-                                            $divide: ['$totalPodcasts', limit],
-                                        },
-                                    },
-                                ],
-                            },
-                        },
-                    },
-                ],
-                podcasts: [
-                    { $sample: { size: limit * 5 } }, // over-sample for randomness
-                    { $skip: skip },
-                    { $limit: limit },
-
-                    // category
-                    {
-                        $lookup: {
-                            from: 'categories',
-                            localField: 'category',
-                            foreignField: '_id',
-                            as: 'category',
-                        },
-                    },
-                    {
-                        $unwind: {
-                            path: '$category',
-                            preserveNullAndEmptyArrays: true,
-                        },
-                    },
-
-                    // subCategory
-                    {
-                        $lookup: {
-                            from: 'subcategories',
-                            localField: 'subCategory',
-                            foreignField: '_id',
-                            as: 'subCategory',
-                        },
-                    },
-                    {
-                        $unwind: {
-                            path: '$subCategory',
-                            preserveNullAndEmptyArrays: true,
-                        },
-                    },
-
-                    // creator
-                    {
-                        $lookup: {
-                            from: 'users',
-                            localField: 'creator',
-                            foreignField: '_id',
-                            as: 'creator',
-                        },
-                    },
-                    {
-                        $unwind: {
-                            path: '$creator',
-                            preserveNullAndEmptyArrays: true,
-                        },
-                    },
-
-                    // bookmark check
-                    {
-                        $lookup: {
-                            from: 'bookmarks',
-                            let: { podcastId: '$_id' },
-                            pipeline: [
-                                {
-                                    $match: {
-                                        $expr: {
-                                            $and: [
-                                                {
-                                                    $eq: [
-                                                        '$podcast',
-                                                        '$$podcastId',
-                                                    ],
-                                                },
-                                                { $eq: ['$user', userId] },
-                                            ],
-                                        },
-                                    },
-                                },
-                            ],
-                            as: 'bookmarkDocs',
-                        },
-                    },
-                    {
-                        $addFields: {
-                            isBookmark: {
-                                $gt: [{ $size: '$bookmarkDocs' }, 0],
-                            },
-                        },
-                    },
-                    { $project: { bookmarkDocs: 0 } },
-
-                    // like check
-                    {
-                        $addFields: {
-                            isLike: {
-                                $in: [
-                                    new mongoose.Types.ObjectId(userId),
-                                    '$likers.user',
-                                ],
-                            },
-                        },
-                    },
-
-                    // project only needed fields
-                    {
-                        $project: {
-                            title: 1,
-                            coverImage: 1,
-                            podcast_url: 1,
-                            location: 1,
-                            duration: 1,
-                            createdAt: 1,
-                            'category._id': 1,
-                            'category.name': 1,
-                            'subCategory._id': 1,
-                            'subCategory.name': 1,
-                            'creator._id': 1,
-                            'creator.name': 1,
-                            isBookmark: 1,
-                            isLike: 1,
-                        },
-                    },
-                ],
-            },
-        },
+    // Step 1: Redis caches
+    const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
+        redis.get(`likedPods:${userId}`),
+        redis.get(`bookmarksAndWatched:${userId}`),
     ]);
 
-    const metadata = result[0]?.metadata?.[0] || {
-        page,
-        limit,
-        totalPages: 0,
-        totalPodcasts: 0,
-        hasMore: false,
+    let likedPods: any[] = [];
+    if (cachedLikedPods) {
+        likedPods = JSON.parse(cachedLikedPods);
+    } else {
+        likedPods = await Podcast.find({ 'likers.user': userId })
+            .select('category subCategory')
+            .limit(50)
+            .lean();
+        await redis.set(
+            `likedPods:${userId}`,
+            JSON.stringify(likedPods),
+            'EX',
+            300
+        );
+    }
+
+    let bookmarks: any[] = [];
+    let watched: any[] = [];
+    if (cachedBookmarksAndWatched) {
+        const parsed = JSON.parse(cachedBookmarksAndWatched);
+        bookmarks = parsed.bookmarks || [];
+        watched = parsed.watched || [];
+    } else {
+        [bookmarks, watched] = await Promise.all([
+            Bookmark.find({ user: userId }).select('podcast').lean(),
+            WatchHistory.find({ user: userId }).select('podcast').lean(),
+        ]);
+        await redis.set(
+            `bookmarksAndWatched:${userId}`,
+            JSON.stringify({ bookmarks, watched }),
+            'EX',
+            300
+        );
+    }
+
+    const bookmarkedPodcastIds = new Set(
+        bookmarks.map((b) => b.podcast.toString())
+    );
+    const watchedIds = watched.map((w) => w.podcast.toString());
+
+    const topCategories = [
+        ...new Set(likedPods.map((p) => p.category?.toString())),
+    ];
+    const topSubCategories = [
+        ...new Set(likedPods.map((p) => p.subCategory?.toString())),
+    ];
+
+    // Step 2: Build query
+    const queryData: any = {
+        _id: { $nin: watchedIds },
+        $and: [],
     };
 
+    if (
+        typeof lat === 'number' &&
+        !isNaN(lat) &&
+        typeof lng === 'number' &&
+        !isNaN(lng)
+    ) {
+        queryData.location = {
+            $nearSphere: {
+                $geometry: { type: 'Point', coordinates: [lng, lat] },
+                $maxDistance: 100 * 1000,
+            },
+        };
+    }
+
+    if (categoryId) queryData.$and.push({ category: categoryId });
+    if (subCategoryId) queryData.$and.push({ subCategory: subCategoryId });
+    if (searchTerm)
+        queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
+    if (query.reels) queryData.$and.push({ duration: { $lte: 60 } });
+
+    if (!categoryId && !subCategoryId && !searchTerm) {
+        const ors = [];
+        if (topCategories.length)
+            ors.push({ category: { $in: topCategories } });
+        if (topSubCategories.length)
+            ors.push({ subCategory: { $in: topSubCategories } });
+        if (ors.length) queryData.$and.push({ $or: ors });
+    }
+
+    if (queryData.$and.length === 0) delete queryData.$and;
+
+    const sortField = query.popular ? 'totalView' : 'createdAt';
+
+    // Step 3: Query personalized podcasts
+    let podcasts: any = await Podcast.find(queryData)
+        .sort({ [sortField]: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select(
+            'title coverImage podcast_url category subCategory location duration createdAt creator'
+        )
+        .populate('category', 'name')
+        .populate('subCategory', 'name')
+        .populate('creator', 'name donationLink profile_image')
+        .lean();
+
+    let isFallback = false;
+
+    // Step 4: Fallback if no results → random unwatched
+    if (!podcasts.length) {
+        isFallback = true;
+        podcasts = await Podcast.aggregate([
+            { $match: { _id: { $nin: watchedIds } } },
+            { $sample: { size: limit } },
+            {
+                $project: {
+                    title: 1,
+                    coverImage: 1,
+                    podcast_url: 1,
+                    category: 1,
+                    subCategory: 1,
+                    location: 1,
+                    duration: 1,
+                    createdAt: 1,
+                    creator: 1,
+                },
+            },
+        ]);
+
+        // populate after aggregation
+        podcasts = await Podcast.populate(podcasts, [
+            { path: 'category', select: 'name' },
+            { path: 'subCategory', select: 'name' },
+            { path: 'creator', select: 'name donationLink profile_image' },
+        ]);
+    }
+
+    // Step 5: firstPodcastId handling
+    if (query.firstPodcastId) {
+        const firstPodcast = await Podcast.findById(query.firstPodcastId)
+            .select(
+                'title coverImage podcast_url category subCategory location duration createdAt creator'
+            )
+            .populate('category', 'name')
+            .populate('subCategory', 'name')
+            .populate('creator', 'name donationLink profile_image')
+            .lean();
+        if (firstPodcast) {
+            const isBookmarked = bookmarkedPodcastIds.has(
+                firstPodcast._id.toString()
+            );
+            podcasts.unshift({ ...firstPodcast, isBookmark: isBookmarked });
+        }
+    }
+
+    // Step 6: Add flags
+    const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
+    const podcastsWithFlags = podcasts.map((podcast: any) => ({
+        ...podcast,
+        isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
+        isLike: likedPodcastIds.has(podcast._id.toString()),
+    }));
+
+    // Step 7: Pagination info
+    let totalPodcasts = 0;
+    let totalPages = 0;
+    if (!isFallback) {
+        totalPodcasts = await Podcast.countDocuments(queryData);
+        totalPages = Math.ceil(totalPodcasts / limit);
+    } else {
+        // fallback: just approximate
+        totalPodcasts = podcasts.length;
+        totalPages = 1;
+    }
+
     return {
-        podcasts: result[0].podcasts,
-        ...metadata,
+        podcasts: podcastsWithFlags,
+        page,
+        limit,
+        totalPages,
+        totalPodcasts,
+        hasMore: page < totalPages,
     };
 };
+
+// for randomize ===================================
+// const getPodcastFeedForUser = async (
+//     userId: string,
+//     query: Record<string, unknown>
+// ) => {
+//     const page = Number(query.page) || 1;
+//     const limit = Number(query.limit) || 20;
+//     const skip = (page - 1) * limit;
+
+//     const categoryId = query.category as string | undefined;
+//     const subCategoryId = query.subCategory as string | undefined;
+//     const searchTerm = query.searchTerm as string | undefined;
+
+//     // --- Filters ---
+//     const filters: any = {};
+//     if (categoryId) filters.category = new mongoose.Types.ObjectId(categoryId);
+//     if (subCategoryId)
+//         filters.subCategory = new mongoose.Types.ObjectId(subCategoryId);
+//     if (searchTerm) filters.title = { $regex: new RegExp(searchTerm, 'i') };
+//     if (query.reels) filters.duration = { $lte: 60 };
+
+//     // --- Aggregation ---
+//     const result = await Podcast.aggregate([
+//         { $match: filters },
+
+//         {
+//             $facet: {
+//                 metadata: [
+//                     { $count: 'totalPodcasts' }, // count total
+//                     {
+//                         $addFields: {
+//                             page,
+//                             limit,
+//                             totalPages: {
+//                                 $ceil: {
+//                                     $divide: ['$totalPodcasts', limit],
+//                                 },
+//                             },
+//                             hasMore: {
+//                                 $lt: [
+//                                     page,
+//                                     {
+//                                         $ceil: {
+//                                             $divide: ['$totalPodcasts', limit],
+//                                         },
+//                                     },
+//                                 ],
+//                             },
+//                         },
+//                     },
+//                 ],
+//                 podcasts: [
+//                     { $sample: { size: limit * 5 } }, // over-sample for randomness
+//                     { $skip: skip },
+//                     { $limit: limit },
+
+//                     // category
+//                     {
+//                         $lookup: {
+//                             from: 'categories',
+//                             localField: 'category',
+//                             foreignField: '_id',
+//                             as: 'category',
+//                         },
+//                     },
+//                     {
+//                         $unwind: {
+//                             path: '$category',
+//                             preserveNullAndEmptyArrays: true,
+//                         },
+//                     },
+
+//                     // subCategory
+//                     {
+//                         $lookup: {
+//                             from: 'subcategories',
+//                             localField: 'subCategory',
+//                             foreignField: '_id',
+//                             as: 'subCategory',
+//                         },
+//                     },
+//                     {
+//                         $unwind: {
+//                             path: '$subCategory',
+//                             preserveNullAndEmptyArrays: true,
+//                         },
+//                     },
+
+//                     // creator
+//                     {
+//                         $lookup: {
+//                             from: 'users',
+//                             localField: 'creator',
+//                             foreignField: '_id',
+//                             as: 'creator',
+//                         },
+//                     },
+//                     {
+//                         $unwind: {
+//                             path: '$creator',
+//                             preserveNullAndEmptyArrays: true,
+//                         },
+//                     },
+
+//                     // bookmark check
+//                     {
+//                         $lookup: {
+//                             from: 'bookmarks',
+//                             let: { podcastId: '$_id' },
+//                             pipeline: [
+//                                 {
+//                                     $match: {
+//                                         $expr: {
+//                                             $and: [
+//                                                 {
+//                                                     $eq: [
+//                                                         '$podcast',
+//                                                         '$$podcastId',
+//                                                     ],
+//                                                 },
+//                                                 { $eq: ['$user', userId] },
+//                                             ],
+//                                         },
+//                                     },
+//                                 },
+//                             ],
+//                             as: 'bookmarkDocs',
+//                         },
+//                     },
+//                     {
+//                         $addFields: {
+//                             isBookmark: {
+//                                 $gt: [{ $size: '$bookmarkDocs' }, 0],
+//                             },
+//                         },
+//                     },
+//                     { $project: { bookmarkDocs: 0 } },
+
+//                     // like check
+//                     {
+//                         $addFields: {
+//                             isLike: {
+//                                 $in: [
+//                                     new mongoose.Types.ObjectId(userId),
+//                                     '$likers.user',
+//                                 ],
+//                             },
+//                         },
+//                     },
+
+//                     // project only needed fields
+//                     {
+//                         $project: {
+//                             title: 1,
+//                             coverImage: 1,
+//                             podcast_url: 1,
+//                             location: 1,
+//                             duration: 1,
+//                             createdAt: 1,
+//                             'category._id': 1,
+//                             'category.name': 1,
+//                             'subCategory._id': 1,
+//                             'subCategory.name': 1,
+//                             'creator._id': 1,
+//                             'creator.name': 1,
+//                             isBookmark: 1,
+//                             isLike: 1,
+//                         },
+//                     },
+//                 ],
+//             },
+//         },
+//     ]);
+
+//     const metadata = result[0]?.metadata?.[0] || {
+//         page,
+//         limit,
+//         totalPages: 0,
+//         totalPodcasts: 0,
+//         hasMore: false,
+//     };
+
+//     return {
+//         podcasts: result[0].podcasts,
+//         ...metadata,
+//     };
+// };
 
 const getSinglePodcast = async (id: string) => {
     const podcast = await Podcast.findById(id).populate([
