@@ -58,7 +58,7 @@ app.use('/', router);
 app.post('/contact-us', sendContactUsEmail);
 
 app.get('/', async (req, res) => {
-    res.send({ message: 'Welcome to podcast  22222' });
+    res.send({ message: 'Welcome to podcast v2' });
 });
 
 app.post('/webhooks/100ms', async (req, res) => {
