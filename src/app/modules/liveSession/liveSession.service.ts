@@ -75,6 +75,7 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
 
     const matchStage: any = {
         status: ENUM_LIVE_SESSION.ENDED,
+        recording_presigned_url: { $exists: true, $nin: [null, ''] },
     };
     if (query.isPublic == 'true') {
         query.isPublic = true;
@@ -157,6 +158,7 @@ const getMyLivesessions = async (
             $match: {
                 status: ENUM_LIVE_SESSION.ENDED,
                 creator: new mongoose.Types.ObjectId(profileId),
+                recording_presigned_url: { $exists: true, $nin: [null, ''] },
             },
         },
         {
