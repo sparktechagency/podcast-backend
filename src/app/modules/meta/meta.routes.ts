@@ -10,7 +10,7 @@ router.get(
     auth(USER_ROLE.superAdmin),
     MetaController.getDashboardMetaData
 );
-
+// whyy not work
 router.get(
     '/user-chart-data',
     auth(USER_ROLE.superAdmin),
