@@ -88,11 +88,15 @@ app.post('/webhooks/100ms', async (req, res) => {
         );
         const cloudFontUrl = `${process.env.CLOUDFRONT_URL}${path}`;
 
-        await LiveSessionServices.endSession(
+        await LiveSessionServices.saveRecording(
             data.session_id,
             cloudFontUrl,
             data.duration
         );
+    }
+    if (event.type === 'session.close.success') {
+        const data = event.data;
+        await LiveSessionServices.endSession(data.session_id);
     }
 
     if (event.type === 'recording.success') {

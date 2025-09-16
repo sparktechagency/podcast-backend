@@ -20,7 +20,16 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
     await redis.del('home:data');
 };
 
-const endSession = async (
+const endSession = async (session_id: string) => {
+    await LiveSession.findOneAndUpdate(
+        { session_id: session_id },
+        {
+            status: ENUM_LIVE_SESSION.ENDED,
+        }
+    );
+    await redis.del('home:data');
+};
+const saveRecording = async (
     session_id: string,
     recording_presigned_url: string,
     duration: number
@@ -243,5 +252,6 @@ const LiveSessionServices = {
     togglePublicPrivate,
     deleteLive,
     getMyLivesessions,
+    saveRecording,
 };
 export default LiveSessionServices;
