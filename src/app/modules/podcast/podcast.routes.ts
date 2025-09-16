@@ -15,7 +15,7 @@ router.post(
     validateRequest(podcastValidation.createPodcastValidationSchema),
     podcastController.createPodcast
 );
-
+////
 router.patch(
     '/update/:id',
     auth(USER_ROLE.creator),
