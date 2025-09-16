@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import Creator from '../creator/creator.model';
 import NormalUser from '../normalUser/normalUser.model';
 
 const getDashboardMetaData = async () => {
     const totalUser = await NormalUser.countDocuments();
-    const totalAthletics = 0;
-    const totalSports = 0;
-    const totalEarning = 0;
+    const totalCreator = await Creator.countDocuments();
+    const totalSubscriber = 0;
+
     return {
         totalUser,
-        totalAthletics,
-        totalSports,
-        totalEarning,
+        totalCreator,
+        totalSubscriber,
     };
 };
 
