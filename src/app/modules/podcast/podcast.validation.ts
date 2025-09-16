@@ -6,7 +6,7 @@ const locationSchema = z.object({
         .array(z.number())
         .length(2, 'Coordinates must be [longitude, latitude]'),
 });
-
+// create podcast validation schema
 const createPodcastValidationSchema = z.object({
     body: z.object({
         category: z.string({ required_error: 'Category is required' }),
