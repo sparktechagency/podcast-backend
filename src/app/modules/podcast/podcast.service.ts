@@ -10,6 +10,7 @@ import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import { getCloudFrontUrl } from '../../helper/getCloudFontUrl';
 import redis from '../../utilities/redisClient';
 import Album from '../album/album.model';
+import Bookmark from '../bookmark/bookmark.model';
 import Category from '../category/category.model';
 import Creator from '../creator/creator.model';
 import SubCategory from '../subCategory/subCategory.model';
@@ -697,6 +698,47 @@ const getPodcastFeedForUser = async (
     const subCategoryId = query.subCategory as string | undefined;
     const searchTerm = query.searchTerm as string | undefined;
 
+    // Step 0: Redis caching for bookmarks and likes
+    const [cachedBookmarks, cachedLikes] = await Promise.all([
+        redis.get(`bookmarks:${userId}`),
+        redis.get(`likes:${userId}`),
+    ]);
+
+    let bookmarkedPodcastIds = new Set<string>();
+    let likedPodcastIds = new Set<string>();
+
+    if (cachedBookmarks) {
+        bookmarkedPodcastIds = new Set(JSON.parse(cachedBookmarks));
+    } else {
+        const bookmarks = await Bookmark.find({ user: userId })
+            .select('podcast')
+            .lean();
+        bookmarkedPodcastIds = new Set(
+            bookmarks.map((b) => b.podcast.toString())
+        );
+        await redis.set(
+            `bookmarks:${userId}`,
+            JSON.stringify([...bookmarkedPodcastIds]),
+            'EX',
+            600
+        );
+    }
+
+    if (cachedLikes) {
+        likedPodcastIds = new Set(JSON.parse(cachedLikes));
+    } else {
+        const likes = await Podcast.find({ 'likers.user': userId })
+            .select('_id')
+            .lean();
+        likedPodcastIds = new Set(likes.map((l) => l._id.toString()));
+        await redis.set(
+            `likes:${userId}`,
+            JSON.stringify([...likedPodcastIds]),
+            'EX',
+            600
+        );
+    }
+
     // Step 1: Build match query with filters
     const match: any = {};
     const andConditions: any[] = [];
@@ -723,38 +765,115 @@ const getPodcastFeedForUser = async (
 
     if (andConditions.length) match.$and = andConditions;
 
-    // Step 2: Get random podcasts with aggregation
+    // Step 2: Aggregation with $lookup (populate references)
     let podcasts = await Podcast.aggregate([
         { $match: match },
-        { $sample: { size: limit } }, // RANDOM selection
+        { $sample: { size: limit } }, // random
+        // Populate category, subCategory, creator
+        {
+            $lookup: {
+                from: 'categories',
+                localField: 'category',
+                foreignField: '_id',
+                as: 'category',
+            },
+        },
+        { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: 'subcategories',
+                localField: 'subCategory',
+                foreignField: '_id',
+                as: 'subCategory',
+            },
+        },
+        { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'creator',
+                foreignField: '_id',
+                as: 'creator',
+            },
+        },
+        { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
         {
             $project: {
                 title: 1,
                 coverImage: 1,
                 podcast_url: 1,
-                category: 1,
-                subCategory: 1,
+                category: { name: 1 },
+                subCategory: { name: 1 },
                 location: 1,
                 duration: 1,
                 createdAt: 1,
-                creator: 1,
+                creator: { name: 1, donationLink: 1, profile_image: 1 },
             },
         },
     ]);
 
-    // Step 3: Populate references
-    await Podcast.populate(podcasts, [
-        { path: 'category', select: 'name' },
-        { path: 'subCategory', select: 'name' },
-        { path: 'creator', select: 'name donationLink profile_image' },
-    ]);
+    // Step 3: Fallback if no podcasts found → random
+    let isFallback = false;
+    if (!podcasts.length) {
+        isFallback = true;
+        podcasts = await Podcast.aggregate([
+            { $sample: { size: limit } },
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'category',
+                    foreignField: '_id',
+                    as: 'category',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$category',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $lookup: {
+                    from: 'subcategories',
+                    localField: 'subCategory',
+                    foreignField: '_id',
+                    as: 'subCategory',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$subCategory',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    title: 1,
+                    coverImage: 1,
+                    podcast_url: 1,
+                    category: { name: 1 },
+                    subCategory: { name: 1 },
+                    location: 1,
+                    duration: 1,
+                    createdAt: 1,
+                    creator: { name: 1, donationLink: 1, profile_image: 1 },
+                },
+            },
+        ]);
+    }
 
     // Step 4: Handle firstPodcastId
     if (query.firstPodcastId) {
         const firstPodcast = await Podcast.findById(query.firstPodcastId)
-            .select(
-                'title coverImage podcast_url category subCategory location duration createdAt creator'
-            )
             .populate('category', 'name')
             .populate('subCategory', 'name')
             .populate('creator', 'name donationLink profile_image')
@@ -770,15 +889,17 @@ const getPodcastFeedForUser = async (
         }
     }
 
-    // Step 5: Add isBookmark and isLike flags (default false)
+    // Step 5: Add functional isBookmark and isLike
     const podcastsWithFlags = podcasts.map((podcast) => ({
         ...podcast,
-        isBookmark: false,
-        isLike: false,
+        isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
+        isLike: likedPodcastIds.has(podcast._id.toString()),
     }));
 
-    // Step 6: Pagination info (approximate since aggregation uses $sample)
-    const totalPodcasts = await Podcast.countDocuments(match);
+    // Step 6: Pagination info
+    const totalPodcasts = isFallback
+        ? podcastsWithFlags.length
+        : await Podcast.countDocuments(match);
     const totalPages = Math.ceil(totalPodcasts / limit);
 
     return {
