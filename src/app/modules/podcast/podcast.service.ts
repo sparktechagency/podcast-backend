@@ -697,7 +697,7 @@ const getPodcastFeedForUser = async (
     const subCategoryId = query.subCategory as string | undefined;
     const searchTerm = query.searchTerm as string | undefined;
 
-    // Step 1: Build match query
+    // Step 1: Build match query with filters
     const match: any = {};
     const andConditions: any[] = [];
 
@@ -723,10 +723,10 @@ const getPodcastFeedForUser = async (
 
     if (andConditions.length) match.$and = andConditions;
 
-    // Step 2: Aggregation with random + pagination
+    // Step 2: Get random podcasts with aggregation
     let podcasts = await Podcast.aggregate([
         { $match: match },
-        { $sample: { size: limit } }, // randomize selection
+        { $sample: { size: limit } }, // RANDOM selection
         {
             $project: {
                 title: 1,
@@ -742,7 +742,7 @@ const getPodcastFeedForUser = async (
         },
     ]);
 
-    // Step 3: Populate refs
+    // Step 3: Populate references
     await Podcast.populate(podcasts, [
         { path: 'category', select: 'name' },
         { path: 'subCategory', select: 'name' },
@@ -761,7 +761,6 @@ const getPodcastFeedForUser = async (
             .lean();
 
         if (firstPodcast) {
-            // Make sure we don’t duplicate it in the list
             podcasts = [
                 firstPodcast,
                 ...podcasts.filter(
@@ -771,12 +770,19 @@ const getPodcastFeedForUser = async (
         }
     }
 
-    // Step 5: Pagination meta (approx, since $sample doesn’t give total count)
+    // Step 5: Add isBookmark and isLike flags (default false)
+    const podcastsWithFlags = podcasts.map((podcast) => ({
+        ...podcast,
+        isBookmark: false,
+        isLike: false,
+    }));
+
+    // Step 6: Pagination info (approximate since aggregation uses $sample)
     const totalPodcasts = await Podcast.countDocuments(match);
     const totalPages = Math.ceil(totalPodcasts / limit);
 
     return {
-        podcasts,
+        podcasts: podcastsWithFlags,
         page,
         limit,
         totalPages,
