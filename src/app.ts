@@ -126,7 +126,7 @@ app.get('/redis-health', async (req, res) => {
     }
 });
 
-// for s3 bucket--------------
+// for s3 bucket-------------------
 app.post('/generate-presigned-url', async (req, res) => {
     const { fileType, fileCategory } = req.body;
     if (!fileType || !fileCategory) {
