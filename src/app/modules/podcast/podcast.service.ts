@@ -337,169 +337,6 @@ const getMyPodcasts = async (
 //     const subCategoryId = query.subCategory as string | undefined;
 //     const searchTerm = query.searchTerm as string | undefined;
 
-//     // Step 2: Parallel Redis get for liked pods & bookmarks+watched caches
-//     const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
-//         redis.get(`likedPods:${userId}`),
-//         redis.get(`bookmarksAndWatched:${userId}`),
-//     ]);
-
-//     let likedPods: any[] = [];
-//     if (cachedLikedPods) {
-//         likedPods = JSON.parse(cachedLikedPods);
-//     } else {
-//         likedPods = await Podcast.find({ 'likers.user': userId })
-//             .select('category subCategory')
-//             .limit(50)
-//             .lean();
-//         await redis.set(
-//             `likedPods:${userId}`,
-//             JSON.stringify(likedPods),
-//             'EX',
-//             300
-//         );
-//     }
-
-//     let bookmarks: any[] = [];
-//     let watched: any[] = [];
-//     if (cachedBookmarksAndWatched) {
-//         const parsed = JSON.parse(cachedBookmarksAndWatched);
-//         bookmarks = parsed.bookmarks || [];
-//         watched = parsed.watched || [];
-//     } else {
-//         [bookmarks, watched] = await Promise.all([
-//             Bookmark.find({ user: userId }).select('podcast').lean(),
-//             WatchHistory.find({ user: userId }).select('podcast').lean(),
-//         ]);
-//         await redis.set(
-//             `bookmarksAndWatched:${userId}`,
-//             JSON.stringify({ bookmarks, watched }),
-//             'EX',
-//             300
-//         );
-//     }
-
-//     const bookmarkedPodcastIds = new Set(
-//         bookmarks.map((b) => b.podcast.toString())
-//     );
-//     const watchedIds = watched.map((w) => w.podcast.toString());
-
-//     // Step 3: Prepare top categories & subCategories for personalization
-//     const topCategories = [
-//         ...new Set(likedPods.map((p) => p.category?.toString())),
-//     ];
-//     const topSubCategories = [
-//         ...new Set(likedPods.map((p) => p.subCategory?.toString())),
-//     ];
-
-//     // Step 4: Build main Mongo query object with filters & personalization
-//     const queryData: any = {
-//         _id: { $nin: watchedIds },
-//         $and: [],
-//     };
-
-//     if (
-//         typeof lat === 'number' &&
-//         !isNaN(lat) &&
-//         typeof lng === 'number' &&
-//         !isNaN(lng)
-//     ) {
-//         queryData.location = {
-//             $nearSphere: {
-//                 $geometry: { type: 'Point', coordinates: [lng, lat] },
-//                 $maxDistance: 100 * 1000, // 100 km radius
-//             },
-//         };
-//     }
-
-//     if (categoryId) queryData.$and.push({ category: categoryId });
-//     if (subCategoryId) queryData.$and.push({ subCategory: subCategoryId });
-//     if (searchTerm)
-//         queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
-//     if (query.reels) queryData.$and.push({ duration: { $lte: 60 } });
-
-//     if (!categoryId && !subCategoryId && !searchTerm) {
-//         const ors = [];
-//         if (topCategories.length)
-//             ors.push({ category: { $in: topCategories } });
-//         if (topSubCategories.length)
-//             ors.push({ subCategory: { $in: topSubCategories } });
-//         if (ors.length) queryData.$and.push({ $or: ors });
-//     }
-
-//     if (queryData.$and.length === 0) delete queryData.$and;
-
-//     const sortField = query.popular ? 'totalView' : 'createdAt';
-
-//     // Step 5: Query podcasts with minimal fields and minimal population
-//     const podcasts: any = await Podcast.find(queryData)
-//         .sort({ [sortField]: -1 })
-//         .skip(skip)
-//         .limit(limit)
-//         .select(
-//             'title coverImage podcast_url category subCategory location duration createdAt creator'
-//         )
-//         .populate('category', 'name') // only name & _id
-//         .populate('subCategory', 'name') // only name & _id
-//         .populate('creator', 'name') // only name & _id
-//         .lean();
-
-//     // Step 6: Optional firstPodcastId logic: fetch separately and add on top
-//     if (query.firstPodcastId) {
-//         const firstPodcast = await Podcast.findById(query.firstPodcastId)
-//             .select(
-//                 'title coverImage podcast_url category subCategory location duration createdAt creator'
-//             )
-//             .populate('category', 'name')
-//             .populate('subCategory', 'name')
-//             .populate('creator', 'name')
-//             .lean();
-//         if (firstPodcast) {
-//             const isBookmarked = bookmarkedPodcastIds.has(
-//                 firstPodcast._id.toString()
-//             );
-//             podcasts.unshift({ ...firstPodcast, isBookmark: isBookmarked });
-//         }
-//     }
-
-//     // Step 7: Add bookmark + like flag to each podcast
-//     const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
-
-//     const podcastsWithFlags = podcasts.map((podcast: any) => ({
-//         ...podcast,
-//         isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
-//         isLike: likedPodcastIds.has(podcast._id.toString()),
-//     }));
-
-//     // Step 8: Pagination info
-//     const totalPodcasts = await Podcast.countDocuments(queryData);
-//     const totalPages = Math.ceil(totalPodcasts / limit);
-
-//     const response = {
-//         podcasts: podcastsWithFlags,
-//         page,
-//         limit,
-//         totalPages,
-//         totalPodcasts,
-//         hasMore: page < totalPages,
-//     };
-
-//     return response;
-// };
-
-// const getPodcastFeedForUser = async (
-//     userId: string,
-//     query: Record<string, unknown>
-// ) => {
-//     const page = Number(query.page) || 1;
-//     const limit = Number(query.limit) || 20;
-//     const skip = (page - 1) * limit;
-
-//     const lng = (query.lng as number) || undefined;
-//     const lat = (query.lat as number) || undefined;
-//     const categoryId = query.category as string | undefined;
-//     const subCategoryId = query.subCategory as string | undefined;
-//     const searchTerm = query.searchTerm as string | undefined;
-
 //     // Step 1: Redis caches
 //     const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
 //         redis.get(`likedPods:${userId}`),
@@ -685,37 +522,43 @@ const getMyPodcasts = async (
 // };
 
 // for randomize ===================================
-const getPodcastFeedForUser = async (
+
+export const getPodcastFeedForUser = async (
     userId: string,
     query: Record<string, unknown>
 ) => {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
+    const limit = Math.min(Number(query.limit) || 20, 50);
+    const firstPodcastId = query.firstPodcastId as string;
+    const lastId = query.lastId as string | undefined; // for smooth scroll
 
-    const lng = query.lng ? Number(query.lng) : undefined;
-    const lat = query.lat ? Number(query.lat) : undefined;
-    const categoryId = query.category as string | undefined;
-    const subCategoryId = query.subCategory as string | undefined;
-    const searchTerm = query.searchTerm as string | undefined;
+    if (!firstPodcastId) throw new Error('firstPodcastId is required');
 
-    // Step 0: Redis caching for bookmarks and likes
+    // Step 0: Cache bookmarks & likes
     const [cachedBookmarks, cachedLikes] = await Promise.all([
         redis.get(`bookmarks:${userId}`),
         redis.get(`likes:${userId}`),
     ]);
 
-    let bookmarkedPodcastIds = new Set<string>();
-    let likedPodcastIds = new Set<string>();
+    const bookmarkedPodcastIds = cachedBookmarks
+        ? new Set(JSON.parse(cachedBookmarks))
+        : new Set(
+              (
+                  await Bookmark.find({ user: userId }).select('podcast').lean()
+              ).map((b) => b.podcast.toString())
+          );
 
-    if (cachedBookmarks) {
-        bookmarkedPodcastIds = new Set(JSON.parse(cachedBookmarks));
-    } else {
-        const bookmarks = await Bookmark.find({ user: userId })
-            .select('podcast')
-            .lean();
-        bookmarkedPodcastIds = new Set(
-            bookmarks.map((b) => b.podcast.toString())
-        );
+    const likedPodcastIds = cachedLikes
+        ? new Set(JSON.parse(cachedLikes))
+        : new Set(
+              (
+                  await Podcast.find({ 'likers.user': userId })
+                      .select('_id')
+                      .lean()
+              ).map((l) => l._id.toString())
+          );
+
+    // Update Redis if empty
+    if (!cachedBookmarks) {
         await redis.set(
             `bookmarks:${userId}`,
             JSON.stringify([...bookmarkedPodcastIds]),
@@ -723,14 +566,7 @@ const getPodcastFeedForUser = async (
             600
         );
     }
-
-    if (cachedLikes) {
-        likedPodcastIds = new Set(JSON.parse(cachedLikes));
-    } else {
-        const likes = await Podcast.find({ 'likers.user': userId })
-            .select('_id')
-            .lean();
-        likedPodcastIds = new Set(likes.map((l) => l._id.toString()));
+    if (!cachedLikes) {
         await redis.set(
             `likes:${userId}`,
             JSON.stringify([...likedPodcastIds]),
@@ -739,37 +575,73 @@ const getPodcastFeedForUser = async (
         );
     }
 
-    // Step 1: Build match query with filters
-    const match: any = {};
-    const andConditions: any[] = [];
+    // Step 1: Fetch first podcast
+    const firstPodcast = await Podcast.findById(firstPodcastId)
+        .populate('category', 'name')
+        .populate('subCategory', 'name')
+        .populate('creator', 'name donationLink profile_image')
+        .lean();
 
-    if (
-        typeof lat === 'number' &&
-        !isNaN(lat) &&
-        typeof lng === 'number' &&
-        !isNaN(lng)
-    ) {
-        match.location = {
-            $nearSphere: {
-                $geometry: { type: 'Point', coordinates: [lng, lat] },
-                $maxDistance: 100 * 1000, // 100 km
+    if (!firstPodcast) throw new Error('First podcast not found');
+
+    // Step 2: Aggregate podcasts
+    let podcastsAgg = await Podcast.aggregate([
+        {
+            $match: {
+                _id: { $ne: new mongoose.Types.ObjectId(firstPodcastId) },
+                ...(lastId
+                    ? { _id: { $lt: new mongoose.Types.ObjectId(lastId) } }
+                    : {}),
             },
-        };
-    }
-
-    if (categoryId) andConditions.push({ category: categoryId });
-    if (subCategoryId) andConditions.push({ subCategory: subCategoryId });
-    if (searchTerm)
-        andConditions.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
-    if (query.reels) andConditions.push({ duration: { $lte: 60 } });
-
-    if (andConditions.length) match.$and = andConditions;
-
-    // Step 2: Aggregation with $lookup (populate references)
-    let podcasts = await Podcast.aggregate([
-        { $match: match },
-        { $sample: { size: limit } }, // random
-        // Populate category, subCategory, creator
+        },
+        {
+            $facet: {
+                categoryPodcasts: [
+                    {
+                        $match: {
+                            category: firstPodcast.category._id,
+                            // subCategory: firstPodcast.subCategory._id, //TODO: need to work if want also match sub category
+                        },
+                    },
+                    { $sample: { size: limit } },
+                ],
+                fallbackPodcasts: [
+                    { $sample: { size: limit } }, // random fallback
+                ],
+            },
+        },
+        {
+            $project: {
+                podcasts: {
+                    $concatArrays: [
+                        '$categoryPodcasts',
+                        {
+                            $slice: [
+                                '$fallbackPodcasts',
+                                {
+                                    $subtract: [
+                                        limit,
+                                        { $size: '$categoryPodcasts' },
+                                    ],
+                                },
+                                limit,
+                            ],
+                        },
+                    ],
+                },
+            },
+        },
+        { $unwind: '$podcasts' },
+        { $replaceRoot: { newRoot: '$podcasts' } },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'creator',
+                foreignField: '_id',
+                as: 'creator',
+            },
+        },
+        { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
                 from: 'categories',
@@ -789,15 +661,6 @@ const getPodcastFeedForUser = async (
         },
         { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
         {
-            $lookup: {
-                from: 'users',
-                localField: 'creator',
-                foreignField: '_id',
-                as: 'creator',
-            },
-        },
-        { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
-        {
             $project: {
                 title: 1,
                 coverImage: 1,
@@ -810,105 +673,40 @@ const getPodcastFeedForUser = async (
                 creator: { name: 1, donationLink: 1, profile_image: 1 },
             },
         },
+        { $limit: limit },
     ]);
 
-    // Step 3: Fallback if no podcasts found → random
-    let isFallback = false;
-    if (!podcasts.length) {
-        isFallback = true;
-        podcasts = await Podcast.aggregate([
-            { $sample: { size: limit } },
-            {
-                $lookup: {
-                    from: 'categories',
-                    localField: 'category',
-                    foreignField: '_id',
-                    as: 'category',
-                },
-            },
-            {
-                $unwind: {
-                    path: '$category',
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $lookup: {
-                    from: 'subcategories',
-                    localField: 'subCategory',
-                    foreignField: '_id',
-                    as: 'subCategory',
-                },
-            },
-            {
-                $unwind: {
-                    path: '$subCategory',
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'creator',
-                    foreignField: '_id',
-                    as: 'creator',
-                },
-            },
-            { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
-            {
-                $project: {
-                    title: 1,
-                    coverImage: 1,
-                    podcast_url: 1,
-                    category: { name: 1 },
-                    subCategory: { name: 1 },
-                    location: 1,
-                    duration: 1,
-                    createdAt: 1,
-                    creator: { name: 1, donationLink: 1, profile_image: 1 },
-                },
-            },
-        ]);
+    // Step 3: Ensure always data is returned
+    if (podcastsAgg.length === 0) {
+        podcastsAgg = Array(limit).fill(firstPodcast); // repeat first podcast if empty
     }
 
-    // Step 4: Handle firstPodcastId
-    if (query.firstPodcastId) {
-        const firstPodcast = await Podcast.findById(query.firstPodcastId)
-            .populate('category', 'name')
-            .populate('subCategory', 'name')
-            .populate('creator', 'name donationLink profile_image')
-            .lean();
+    // Step 4: Prepend first podcast if first page
+    const podcasts = !lastId
+        ? [
+              firstPodcast,
+              ...podcastsAgg.filter(
+                  (p) => p._id.toString() !== firstPodcast._id.toString()
+              ),
+          ]
+        : podcastsAgg;
 
-        if (firstPodcast) {
-            podcasts = [
-                firstPodcast,
-                ...podcasts.filter(
-                    (p) => p._id.toString() !== firstPodcast._id.toString()
-                ),
-            ];
-        }
-    }
-
-    // Step 5: Add functional isBookmark and isLike
-    const podcastsWithFlags = podcasts.map((podcast) => ({
-        ...podcast,
-        isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
-        isLike: likedPodcastIds.has(podcast._id.toString()),
+    // Step 5: Add flags
+    const podcastsWithFlags = podcasts.map((p) => ({
+        ...p,
+        isBookmark: bookmarkedPodcastIds.has(p._id.toString()),
+        isLike: likedPodcastIds.has(p._id.toString()),
     }));
 
-    // Step 6: Pagination info
-    const totalPodcasts = isFallback
-        ? podcastsWithFlags.length
-        : await Podcast.countDocuments(match);
-    const totalPages = Math.ceil(totalPodcasts / limit);
+    // Step 6: Prepare next cursor
+    const nextCursor = podcastsWithFlags.length
+        ? podcastsWithFlags[podcastsWithFlags.length - 1]._id
+        : null;
 
     return {
         podcasts: podcastsWithFlags,
-        page,
-        limit,
-        totalPages,
-        totalPodcasts,
-        hasMore: page < totalPages,
+        nextCursor,
+        hasMore: true, // endless scroll
     };
 };
 
@@ -1196,62 +994,6 @@ const getHomeData = async () => {
     };
 };
 
-// const getPodcastForSubcategories = async (categoryId: string) => {
-//     const result = await SubCategory.aggregate([
-//         {
-//             $match: {
-//                 category: new mongoose.Types.ObjectId(categoryId),
-//                 isDeleted: false,
-//             },
-//         },
-//         {
-//             $lookup: {
-//                 from: 'podcasts',
-//                 let: { subCatId: '$_id', categoryId: '$category' },
-//                 pipeline: [
-//                     {
-//                         $match: {
-//                             $expr: {
-//                                 $and: [
-//                                     { $eq: ['$subCategory', '$$subCatId'] },
-//                                     { $eq: ['$category', '$$categoryId'] },
-//                                 ],
-//                             },
-//                         },
-//                     },
-//                     {
-//                         $sort: { createdAt: -1 },
-//                     },
-//                     {
-//                         $limit: 10,
-//                     },
-//                     {
-//                         $project: {
-//                             title: 1,
-//                             coverImage: 1,
-//                             video_url: 1,
-//                             audio_url: 1,
-//                             totalView: 1,
-//                             duration: 1,
-//                             createdAt: 1,
-//                         },
-//                     },
-//                 ],
-//                 as: 'podcasts',
-//             },
-//         },
-//         {
-//             $project: {
-//                 _id: 1,
-//                 name: 1,
-//                 image: 1,
-//                 podcasts: 1,
-//             },
-//         },
-//     ]);
-
-//     return result;
-// };
 const getPodcastForSubcategories = async (categoryId: string) => {
     const cacheKey = `subcat-podcast:${categoryId}`;
 
