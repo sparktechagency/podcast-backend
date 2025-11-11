@@ -959,7 +959,7 @@ const getHomeData = async () => {
                     },
                     streamRoom: 1,
                     latestPodcast: {
-                        _id: '$_id',
+                        _id: '$latestPodcast._id',
                         title: '$latestPodcast.title',
                         description: '$latestPodcast.description',
                         podcast_url: '$latestPodcast.podcast_url',
