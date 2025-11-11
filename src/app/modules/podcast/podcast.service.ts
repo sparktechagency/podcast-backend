@@ -938,7 +938,7 @@ const getHomeData = async () => {
             // Select fields
             {
                 $project: {
-                    _id: 0,
+                    // _id: 0,
                     creatorId: '$_id',
                     name: 1,
                     email: 1,
