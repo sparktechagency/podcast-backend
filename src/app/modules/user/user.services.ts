@@ -1,25 +1,25 @@
 /* eslint-disable no-unused-vars */
 
-import { User } from './user.model';
-import AppError from '../../error/appError';
 import httpStatus from 'http-status';
-import { INormalUser } from '../normalUser/normalUser.interface';
-import mongoose from 'mongoose';
-import { USER_ROLE } from './user.constant';
-import NormalUser from '../normalUser/normalUser.model';
-import cron from 'node-cron';
 import { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
+import AppError from '../../error/appError';
+import { INormalUser } from '../normalUser/normalUser.interface';
+import NormalUser from '../normalUser/normalUser.model';
 import SuperAdmin from '../superAdmin/superAdmin.model';
+import { USER_ROLE } from './user.constant';
+import { User } from './user.model';
 
 //TODO: ata kono todo na mojar baper hossa akana thaka jdoi aii 2 ta line remove kora dai tahola multer-s3 kaj korba nah
 import dotenv from 'dotenv';
-import Admin from '../admin/admin.model';
-import { TUser, TUserRole } from './user.interface';
-import sendEmail from '../../utilities/sendEmail';
-import registrationSuccessEmailBody from '../../mailTemplate/registerSucessEmail';
-import { createToken } from './user.utils';
 import config from '../../config';
+import registrationSuccessEmailBody from '../../mailTemplate/registerSucessEmail';
+import sendEmail from '../../utilities/sendEmail';
+import Admin from '../admin/admin.model';
 import Creator from '../creator/creator.model';
+import { TUser, TUserRole } from './user.interface';
+import { createToken } from './user.utils';
 dotenv.config();
 const generateVerifyCode = (): number => {
     return Math.floor(100000 + Math.random() * 900000);
@@ -303,6 +303,22 @@ const changeUserStatus = async (id: string) => {
     return result;
 };
 
+const deleteUserByAdmin = async (userId: string) => {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    }
+
+    await User.findByIdAndDelete(user._id);
+    if (user.role == USER_ROLE.user) {
+        const result = await NormalUser.findByIdAndDelete(user.profileId);
+        return result;
+    } else if (user.role == USER_ROLE.creator) {
+        const result = await Creator.findByIdAndDelete(user.profileId);
+        return result;
+    }
+};
+
 const userServices = {
     registerUser,
     getMyProfile,
@@ -311,6 +327,7 @@ const userServices = {
     verifyCode,
     resendVerifyCode,
     updateUserProfile,
+    deleteUserByAdmin,
 };
 
 export default userServices;

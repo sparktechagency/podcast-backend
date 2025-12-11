@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import userServices from './user.services';
-import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 
 const registerUser = catchAsync(async (req, res) => {
     const result = await userServices.registerUser(req.body);
@@ -92,6 +92,16 @@ const deleteUserAccount = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const deleteUserByAdmin = catchAsync(async (req, res) => {
+    const result = await userServices.deleteUserByAdmin(req.params.id);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Account deleted successfully`,
+        data: result,
+    });
+});
 
 const userController = {
     registerUser,
@@ -101,5 +111,6 @@ const userController = {
     verifyCode,
     resendVerifyCode,
     updateUserProfile,
+    deleteUserByAdmin,
 };
 export default userController;

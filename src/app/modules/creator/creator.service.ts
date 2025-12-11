@@ -352,6 +352,7 @@ const getTopCreators = async (query: Record<string, unknown>) => {
                 },
                 streamRoom: 1,
                 latestPodcast: {
+                    _id: '$latestPodcast._id',
                     title: '$latestPodcast.title',
                     description: '$latestPodcast.description',
                     podcast_url: '$latestPodcast.podcast_url',
