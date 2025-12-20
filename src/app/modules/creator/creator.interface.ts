@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { ENUM_GENDER } from '../user/user.enum';
-
+// interface
 export interface ICreator {
     user: Types.ObjectId;
     name: string;

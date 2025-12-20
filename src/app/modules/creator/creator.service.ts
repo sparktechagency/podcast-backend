@@ -297,7 +297,7 @@ const getTopCreators = async (query: Record<string, unknown>) => {
         },
         { $unwind: { path: '$streamRoom', preserveNullAndEmptyArrays: true } },
 
-        // Lookup podcasts for total views
+        // Lookup podcasts for total views--------
         {
             $lookup: {
                 from: 'podcasts',
