@@ -1,10 +1,8 @@
 import express from 'express';
-import { uploadFile } from '../../helper/fileUploader';
+import { uploadFile } from '../../helper/mutler-s3-uploader';
 import auth from '../../middlewares/auth';
-import validateRequest from '../../middlewares/validateRequest';
 import { USER_ROLE } from '../user/user.constant';
 import stationController from './station.controller';
-import stationValidations from './station.validation';
 
 const router = express.Router();
 
@@ -18,8 +16,7 @@ router.patch(
         }
         next();
     },
-    validateRequest(stationValidations.updateStationData),
-    stationController.updateUserProfile
+    stationController.updateStation
 );
 
 export const stationRoutes = router;
