@@ -1,21 +1,26 @@
-import httpStatus from "http-status";
-import AppError from "../../error/appError";
-import { IStation } from "./station.interface";
-import stationModel from "./station.model";
+import httpStatus from 'http-status';
+import AppError from '../../error/appError';
+import { deleteFileFromS3 } from '../../helper/deleteFromS3';
+import { IStation } from './station.interface';
+import { Station } from './station.model';
 
-const updateUserProfile = async (id: string, payload: Partial<IStation>) => {
-    if (payload.email || payload.username) {
-        throw new AppError(httpStatus.BAD_REQUEST, "You cannot change the email or username");
+const updateStation = async (payload: Partial<IStation>) => {
+    const station = await Station.findOne();
+    if (!station) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
     }
-    const user = await stationModel.findById(id);
-    if (!user) {
-        throw new AppError(httpStatus.NOT_FOUND, "Profile not found");
-    }
-    return await stationModel.findByIdAndUpdate(id, payload, {
+    const result = await Station.findByIdAndUpdate(station._id, payload, {
         new: true,
         runValidators: true,
     });
+    if (station.profile_image && payload.profile_image) {
+        deleteFileFromS3(station.profile_image);
+    }
+    if (station.cover_image && payload.cover_image) {
+        deleteFileFromS3(station.cover_image);
+    }
+    return result;
 };
 
-const StationServices = { updateUserProfile };
+const StationServices = { updateStation };
 export default StationServices;
