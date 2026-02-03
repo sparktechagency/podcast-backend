@@ -1,9 +1,10 @@
 import httpStatus from 'http-status';
-import AppError from '../../error/appError';
+import mongoose from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
+import AppError from '../../error/appError';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
-import Album from './album.model';
 import { IAlbum } from './album.interface';
+import Album from './album.model';
 
 const createAlbum = async (payload: IAlbum) => {
     return await Album.create(payload);
@@ -79,12 +80,50 @@ const deleteAlbum = async (albumId: string) => {
     return result;
 };
 
+const addPodcastToAlbum = async (albumId: string, podcastId: string) => {
+    const album = await Album.findById(albumId);
+    if (!album) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Album not found');
+    }
+
+    if (album.podcasts.includes(new mongoose.Types.ObjectId(podcastId))) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Podcast already in album');
+    }
+
+    album.podcasts.push(new mongoose.Types.ObjectId(podcastId));
+    await album.save();
+
+    return album;
+};
+
+/**
+ */
+const removePodcastFromAlbum = async (albumId: string, podcastId: string) => {
+    const album = await Album.findById(albumId);
+    if (!album) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Album not found');
+    }
+
+    if (!album.podcasts.includes(new mongoose.Types.ObjectId(podcastId))) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Podcast not found in album'
+        );
+    }
+
+    album.podcasts = album.podcasts.filter((p) => p.toString() !== podcastId);
+    await album.save();
+
+    return album;
+};
 const AlbumService = {
     createAlbum,
     getAllAlbums,
     getAlbumById,
     updateAlbum,
     deleteAlbum,
+    addPodcastToAlbum,
+    removePodcastFromAlbum,
 };
 
 export default AlbumService;

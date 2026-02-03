@@ -1,10 +1,10 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
+import { uploadFile } from '../../helper/mutler-s3-uploader';
 import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
-import { uploadFile } from '../../helper/mutler-s3-uploader';
-import AlbumValidations from './album.validation';
-import AlbumController from './album.controller';
 import { USER_ROLE } from '../user/user.constant';
+import AlbumController from './album.controller';
+import AlbumValidations from './album.validation';
 
 const router = express.Router();
 
@@ -63,5 +63,16 @@ router.delete(
     auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.user),
     AlbumController.deleteAlbum
 );
+router.post(
+    '/add-podcast/:albumId',
+    auth(USER_ROLE.superAdmin, USER_ROLE.admin),
+    AlbumController.addPodcastToAlbum
+);
 
+/* Remove a podcast from an album */
+router.delete(
+    '/remove-podcast/:albumId/:podcastId',
+    auth(USER_ROLE.superAdmin, USER_ROLE.admin),
+    AlbumController.removePodcastFromAlbum
+);
 export const albumRoutes = router;

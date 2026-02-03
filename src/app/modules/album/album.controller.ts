@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
-import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import AlbumService from './album.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -65,12 +65,43 @@ const deleteAlbum = catchAsync(async (req, res) => {
     });
 });
 
+/* Add a podcast to an album */
+const addPodcastToAlbum = catchAsync(async (req, res) => {
+    const { albumId } = req.params;
+    const { podcastId } = req.body;
+
+    const result = await AlbumService.addPodcastToAlbum(albumId, podcastId);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcast added to album successfully',
+        data: result,
+    });
+});
+
+/* Remove a podcast from an album */
+const removePodcastFromAlbum = catchAsync(async (req, res) => {
+    const { albumId, podcastId } = req.params;
+
+    const result = await AlbumService.removePodcastFromAlbum(
+        albumId,
+        podcastId
+    );
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Podcast removed from album successfully',
+        data: result,
+    });
+});
 const AlbumController = {
     createAlbum,
     getAllAlbums,
     getAlbumById,
     updateAlbum,
     deleteAlbum,
+    addPodcastToAlbum,
+    removePodcastFromAlbum,
 };
 
 export default AlbumController;

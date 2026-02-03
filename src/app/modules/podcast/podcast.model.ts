@@ -1,13 +1,14 @@
 import { Schema, model } from 'mongoose';
-import { IPodcast } from './podcast.interface';
 import redis from '../../utilities/redisClient';
+import { IPodcast } from './podcast.interface';
 
 const PodcastSchema = new Schema<IPodcast>(
     {
         creator: {
             type: Schema.Types.ObjectId,
             ref: 'Creator',
-            required: true,
+            // required: true,
+            default: null,
         },
         category: {
             type: Schema.Types.ObjectId,
@@ -51,6 +52,11 @@ const PodcastSchema = new Schema<IPodcast>(
                 },
             },
         ],
+        station: {
+            type: Schema.Types.ObjectId,
+            ref: 'Station',
+            default: null,
+        },
     },
     { timestamps: true }
 );
@@ -61,8 +67,13 @@ PodcastSchema.index({ category: 1 });
 PodcastSchema.index({ createdAt: -1 });
 PodcastSchema.index({ title: 'text', name: 'text', description: 'text' });
 
-PodcastSchema.post(['save'], async function () {
+PodcastSchema.post('save', async function (doc) {
     await redis.del('home:data');
+    const userCachePattern = `user:${doc.creator}:*`;
+    const keys = await redis.keys(userCachePattern);
+    if (keys.length) {
+        await redis.del(...keys);
+    }
 });
 
 const Podcast = model<IPodcast>('Podcast', PodcastSchema);
