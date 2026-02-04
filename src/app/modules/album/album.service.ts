@@ -40,6 +40,10 @@ const getAlbumById = async (albumId: string) => {
                 path: 'creator',
                 select: 'name profile_image',
             },
+            {
+                path: 'station',
+                select: 'name profile_image',
+            },
         ],
     });
     if (!album) {
