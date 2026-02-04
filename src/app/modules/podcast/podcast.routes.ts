@@ -11,14 +11,14 @@ const router = express.Router();
 //
 router.post(
     '/create',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.superAdmin),
     validateRequest(podcastValidation.createPodcastValidationSchema),
     podcastController.createPodcast
 );
 ////
 router.patch(
     '/update/:id',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.superAdmin),
     uploadFile(),
     (req: Request, res: Response, next: NextFunction) => {
         if (req.body.data) {
@@ -33,7 +33,7 @@ router.patch(
 router.get('/all', podcastController.getAllPodcasts);
 router.get(
     '/my-podcasts',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.superAdmin),
     podcastController.getMyPodcasts
 );
 router.get(
