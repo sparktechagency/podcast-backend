@@ -18,7 +18,8 @@ import { USER_ROLE } from '../user/user.constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
 import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
-const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
+const createPodcastIntoDB = async (userData: JwtPayload, payload: IPodcast) => {
+    const userId = userData.profileId as string;
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
         SubCategory.findById(payload.subCategory),
@@ -39,6 +40,9 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
         payload.coverImage = getCloudFrontUrl(payload.coverImage);
     }
 
+    if (userData.role == USER_ROLE.superAdmin) {
+        return await Podcast.create({ ...payload });
+    }
     return await Podcast.create({ ...payload, creator: userId });
 };
 
