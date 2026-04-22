@@ -6,7 +6,7 @@ import { Station } from './station.model';
 
 const updateStation = async (payload: Partial<IStation>) => {
     const station = await Station.findOne();
-    if (!station) {
+                if (!station) {
         throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
     }
     const result = await Station.findByIdAndUpdate(station._id, payload, {
@@ -22,5 +22,13 @@ const updateStation = async (payload: Partial<IStation>) => {
     return result;
 };
 
-const StationServices = { updateStation };
+const getStation = async () => {
+    const station = await Station.findOne();
+    if (!station) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Station not found');
+    }
+    return station;
+};
+
+const StationServices = { updateStation, getStation };
 export default StationServices;

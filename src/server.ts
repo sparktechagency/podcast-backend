@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable no-undef */
-import mongoose from 'mongoose';
 import { Server as HTTPServer } from 'http'; // Import HTTPServer type
+import mongoose from 'mongoose';
 import server from './app';
-import { errorLogger, logger } from './app/shared/logger';
 import config from './app/config';
 import seedSuperAdmin from './app/DB';
+import seedStation from './app/DB/station';
+import { errorLogger, logger } from './app/shared/logger';
 // import { initializeSocket } from './app/socket/socketManager';
 //00000
 let myServer: HTTPServer | undefined;
@@ -28,6 +29,7 @@ async function main() {
         myServer = server.listen(port, '0.0.0.0', () => {
             logger.info(`Server running on http://0.0.0.0:${port}`);
             seedSuperAdmin();
+            seedStation();
         });
 
         // Global unhandled rejection handler

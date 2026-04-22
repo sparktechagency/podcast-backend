@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.patch(
     '/update',
-    auth(USER_ROLE.user),
+    auth(USER_ROLE.user, USER_ROLE.superAdmin, USER_ROLE.admin),
     uploadFile(),
     (req, res, next) => {
         if (req.body.data) {
@@ -18,5 +18,7 @@ router.patch(
     },
     stationController.updateStation
 );
+
+router.get('/get-station', stationController.getStation);
 
 export const stationRoutes = router;

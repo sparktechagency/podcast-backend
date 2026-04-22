@@ -19,6 +19,7 @@ import WatchHistory from '../watchHistory/watchHistory.model';
 import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
 const createPodcastIntoDB = async (userData: JwtPayload, payload: IPodcast) => {
+    console.log('Creating podcast with payload:', payload); // Debug log
     const userId = userData.profileId as string;
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
@@ -58,17 +59,16 @@ const updatePodcastIntoDB = async (
             throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
         }
 
+        if (payload.podcast_url) {
+            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        }
+
         const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
             new: true,
             runValidators: true,
         });
 
         if (payload.podcast_url) {
-            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url as string);
-        }
-        if (payload.podcast_url) {
-            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
             deleteFileFromS3(podcast?.podcast_url as string);
         }
 
@@ -85,6 +85,9 @@ const updatePodcastIntoDB = async (
         if (!podcast) {
             throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
         }
+        if (payload.podcast_url) {
+            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        }
 
         const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
             new: true,
@@ -92,11 +95,6 @@ const updatePodcastIntoDB = async (
         });
 
         if (payload.podcast_url) {
-            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url as string);
-        }
-        if (payload.podcast_url) {
-            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
             deleteFileFromS3(podcast?.podcast_url as string);
         }
 

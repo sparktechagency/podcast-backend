@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import generateETag from '../../helper/generateEtag';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import podcastService from './podcast.service';
@@ -16,6 +17,10 @@ const createPodcast = catchAsync(async (req, res) => {
 });
 
 const updatePodcast = catchAsync(async (req, res) => {
+    const file: any = req.files?.podcast_cover;
+    if (file) {
+        req.body.coverImage = getCloudFrontUrl(file[0].key);
+    }
     const result = await podcastService.updatePodcastIntoDB(
         req.user,
         req.params.id,

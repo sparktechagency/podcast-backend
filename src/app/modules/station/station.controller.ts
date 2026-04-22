@@ -22,6 +22,15 @@ const updateStation = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const getStation = catchAsync(async (req, res) => {
+    const result = await stationServices.getStation();
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Station retrieved successfully',
+        data: result,
+    });
+});
 
-const StationController = { updateStation };
+const StationController = { updateStation, getStation };
 export default StationController;
