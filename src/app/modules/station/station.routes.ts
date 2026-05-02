@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.patch(
     '/update',
-    auth(USER_ROLE.user, USER_ROLE.superAdmin, USER_ROLE.admin),
+    auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req, res, next) => {
         if (req.body.data) {

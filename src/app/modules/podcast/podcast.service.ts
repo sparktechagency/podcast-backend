@@ -986,14 +986,239 @@ const toggleLikePodcast = async (podcastId: string, userData: JwtPayload) => {
     if (isLiked) {
         await Podcast.findByIdAndUpdate(podcastId, {
             $pull: { likers: { user: userObjectId, userType } },
+            $inc: { totalLikes: -1 },
         });
         return { isLike: false };
     } else {
         await Podcast.findByIdAndUpdate(podcastId, {
             $push: { likers: { user: userObjectId, userType } },
+            $inc: { totalLikes: 1 },
         });
         return { isLike: true };
     }
+};
+
+const globalSearch = async (params: any) => {
+    const { searchTerm, lat, lng, page = 1, limit = 10 } = params;
+
+    if (!searchTerm?.trim()) {
+        return getDefaultFeed(params);
+    }
+
+    return searchWithKeyword({
+        searchTerm,
+        page,
+        limit,
+        lat,
+        lng,
+    });
+};
+
+const searchWithKeyword = async ({
+    searchTerm,
+    page,
+    limit,
+    lat,
+    lng,
+}: {
+    searchTerm: string;
+    page: number;
+    limit: number;
+    lat?: number;
+    lng?: number;
+}) => {
+    const skip = (page - 1) * limit;
+
+    const hasLocation = lat && lng;
+
+    const pipeline: any[] = [];
+
+    // 🔥 GEO SEARCH FIRST (if provided)
+    if (hasLocation) {
+        pipeline.push({
+            $geoNear: {
+                near: {
+                    type: 'Point',
+                    coordinates: [lng, lat], // ⚠️ lng first
+                },
+                distanceField: 'distance',
+                spherical: true,
+                query: searchTerm ? { $text: { $search: searchTerm } } : {},
+            },
+        });
+    } else if (searchTerm) {
+        pipeline.push({
+            $match: {
+                $text: { $search: searchTerm },
+            },
+        });
+
+        pipeline.push({
+            $addFields: {
+                score: { $meta: 'textScore' },
+            },
+        });
+    }
+
+    // 🔥 Common fields
+    pipeline.push(
+        {
+            $addFields: {
+                type: 'podcast',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                title: 1,
+                image: '$coverImage',
+                createdAt: 1,
+                score: hasLocation ? 0 : '$score',
+                distance: 1,
+                type: 1,
+            },
+        }
+    );
+
+    // 🔥 UNION WITH CREATORS (no geo for now or optional)
+    pipeline.push({
+        $unionWith: {
+            coll: 'creators',
+            pipeline: [
+                {
+                    $match: {
+                        isApproved: true,
+                        ...(searchTerm && {
+                            $text: { $search: searchTerm },
+                        }),
+                    },
+                },
+                {
+                    $addFields: {
+                        type: 'creator',
+                        score: searchTerm ? { $meta: 'textScore' } : 0,
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        image: '$profile_image',
+                        createdAt: 1,
+                        score: 1,
+                        type: 1,
+                    },
+                },
+            ],
+        },
+    });
+
+    // 🔥 SORT LOGIC (important)
+    pipeline.push({
+        $sort: hasLocation
+            ? { distance: 1, createdAt: -1 } // nearest first
+            : { score: -1, createdAt: -1 }, // relevance first
+    });
+
+    // 🔥 PAGINATION
+    pipeline.push({
+        $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            total: [{ $count: 'count' }],
+        },
+    });
+
+    const result = await Podcast.aggregate(pipeline);
+
+    const data = result[0]?.data || [];
+    const total = result[0]?.total[0]?.count || 0;
+
+    return {
+        meta: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+        data: data.map((item: any) => ({
+            id: item._id,
+            type: item.type,
+            title: item.title || null,
+            name: item.name || null,
+            image: item.image,
+            distance: item.distance || null,
+        })),
+    };
+};
+const getDefaultFeed = async ({
+    page,
+    limit,
+}: {
+    page: number;
+    limit: number;
+}) => {
+    const skip = (page - 1) * limit;
+
+    const [podcasts, creators, podcastCount, creatorCount] = await Promise.all([
+        Podcast.find({})
+            .sort({ totalView: -1, createdAt: -1, totalLikes: -1 })
+            .select('title coverImage totalView createdAt totalLikes')
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+
+        Creator.find({ isApproved: true })
+            .sort({ createdAt: -1 })
+            .select('name profile_image createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+
+        Podcast.countDocuments(),
+        Creator.countDocuments({ isApproved: true }),
+    ]);
+
+    // normalize
+    const combined = [
+        ...podcasts.map((p) => ({
+            id: p._id,
+            type: 'podcast',
+            title: p.title,
+            image: p.coverImage,
+            createdAt: p.createdAt,
+            score: p.totalView || 0, // fake score for sorting
+        })),
+        ...creators.map((c) => ({
+            id: c._id,
+            type: 'creator',
+            name: c.name,
+            image: c.profile_image,
+            createdAt: c.createdAt,
+            score: 0,
+        })),
+    ];
+
+    //  sorting
+    combined.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    });
+
+    const paginated = combined.slice(0, limit);
+
+    const total = podcastCount + creatorCount;
+
+    return {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+        data: paginated,
+    };
 };
 const podcastService = {
     createPodcastIntoDB,
@@ -1007,6 +1232,7 @@ const podcastService = {
     getPodcastForSubcategories,
     getMyPodcasts,
     toggleLikePodcast,
+    globalSearch,
 };
 
 export default podcastService;

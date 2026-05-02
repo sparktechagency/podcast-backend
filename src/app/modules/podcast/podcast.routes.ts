@@ -67,4 +67,5 @@ router.post(
 );
 
 router.get('/get-home-data', podcastController.getHomeData);
+router.get('/global-search', podcastController.globalSearch);
 export const podcastRoutes = router;

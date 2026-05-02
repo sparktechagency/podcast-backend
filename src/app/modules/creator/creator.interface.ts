@@ -17,4 +17,6 @@ export interface ICreator {
     gender: (typeof ENUM_GENDER)[keyof typeof ENUM_GENDER];
     isApproved: boolean;
     donationLink?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }

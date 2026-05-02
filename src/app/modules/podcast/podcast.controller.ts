@@ -147,6 +147,15 @@ const toggleLikePodcast = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const globalSearch = catchAsync(async (req, res) => {
+    const result = await podcastService.globalSearch(req.query);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Global search results retrieved successfully',
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -160,6 +169,7 @@ const podcastController = {
     getPodcastForSubcategories,
     getMyPodcasts,
     toggleLikePodcast,
+    globalSearch,
 };
 
 export default podcastController;
