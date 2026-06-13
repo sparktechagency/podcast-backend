@@ -1,16 +1,14 @@
-import express from "express";
-import auth from "../../middlewares/auth";
-import { USER_ROLE } from "../user/user.constant";
-import validateRequest from "../../middlewares/validateRequest";
-import stationValidations from "./station.validation";
-import stationController from "./station.controller";
-import { uploadFile } from "../../helper/fileUploader";
+import express from 'express';
+import { uploadFile } from '../../helper/mutler-s3-uploader';
+import auth from '../../middlewares/auth';
+import { USER_ROLE } from '../user/user.constant';
+import stationController from './station.controller';
 
 const router = express.Router();
 
 router.patch(
-    "/update-profile",
-    auth(USER_ROLE.user),
+    '/update',
+    auth(USER_ROLE.superAdmin),
     uploadFile(),
     (req, res, next) => {
         if (req.body.data) {
@@ -18,8 +16,9 @@ router.patch(
         }
         next();
     },
-    validateRequest(stationValidations.updateStationData),
-    stationController.updateUserProfile
+    stationController.updateStation
 );
+
+router.get('/get-station', stationController.getStation);
 
 export const stationRoutes = router;

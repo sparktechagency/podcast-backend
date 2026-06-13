@@ -23,6 +23,7 @@ declare namespace Express {
             podcast_cover?: File[];
             profile_cover?: File[];
             liveCover?: File[];
+            cover_image?: File[];
         };
     }
 }

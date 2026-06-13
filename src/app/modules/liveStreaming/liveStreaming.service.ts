@@ -17,6 +17,7 @@ import {
 import { StreamRoom } from './liveStreaming.model';
 
 const createStreamingRoom = async (profileId: string) => {
+    console.log('console from live stream');
     const liveRoom = await StreamRoom.findOne({
         host: profileId,
     });
@@ -48,11 +49,6 @@ const createStreamingRoom = async (profileId: string) => {
         status: ENUM_LIVE_STREAM_STATUS.live,
         roomCodes,
     });
-    // const joinToken = await getJoinToken({
-    //     user_id: profileId,
-    //     role: 'host',
-    //     room_id: roomData.id,
-    // });
 
     return { roomData, roomCodes };
 };
@@ -195,83 +191,112 @@ const endLiveAndStoreRecordings = async (roomId: string) => {
     return null;
 };
 
-const getMyLiveRoom = async (profileId: string) => {
-    const room = await StreamRoom.findOne({
-        status: ENUM_LIVE_STREAM_STATUS.live,
-        host: profileId,
-    });
-    if (!room) {
-        return null;
-    }
-    return room;
-};
-
-// const startRecording = async (profileId: string, roomId: string) => {
+// const getMyLiveRoom = async (profileId: string) => {
 //     const room = await StreamRoom.findOne({
-//         host: profileId,
-//         room_id: roomId,
 //         status: ENUM_LIVE_STREAM_STATUS.live,
+//         host: profileId,
 //     });
+//     console.log('room data', room);
 //     if (!room) {
-//         throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
+//         return null;
 //     }
-//     try {
-//         const response = await fetch(
-//             `${HMS_ENDPOINT}/recordings/room/${roomId}/start`,
-//             {
-//                 method: 'POST',
-//                 headers: {
-//                     'Content-Type': 'application/json',
-//                     Authorization: `Bearer ${getMgmToken()}`,
-//                 },
-//                 body: JSON.stringify({
-//                     meeting_url: `https://${config.hms.subdomain}.app.100ms.live/preview/${roomId}/host?skip_preview=true`,
-//                     resolution: { width: 1280, height: 720 },
-//                     transcription: {
-//                         enabled: true,
-//                         output_modes: ['txt', 'srt', 'json'],
-//                         custom_vocabulary: [
-//                             '100ms',
-//                             'WebSDK',
-//                             'Flutter',
-//                             'Sundar',
-//                             'Pichai',
-//                             'DALL-E',
-//                         ],
-//                         summary: {
-//                             enabled: true,
-//                             context: 'This is a general call',
-//                             sections: [
-//                                 { title: 'Agenda', format: 'bullets' },
-//                                 { title: 'Key Points', format: 'bullets' },
-//                                 { title: 'Action Items', format: 'bullets' },
-//                                 { title: 'Short Summary', format: 'paragraph' },
-//                             ],
-//                             temperature: 0.5,
-//                         },
-//                     },
-//                 }),
-//             }
-//         );
-
-//         const data = await response.json();
-
-//         if (!response.ok) {
-//             throw new AppError(
-//                 httpStatus.BAD_REQUEST,
-//                 data.message || 'Failed to start recording'
-//             );
-//         }
-
-//         return data; // contains recording id, status, etc.
-//     } catch (err: any) {
-//         throw new AppError(
-//             httpStatus.INTERNAL_SERVER_ERROR,
-//             err.message || 'Recording failed'
-//         );
-//     }
+//     return room;
 // };
 
+// const getMyLiveRoom = async (profileId: string) => {
+//     const room = await StreamRoom.findOne({ host: profileId });
+//     console.log('Room----------------------------------->>>>', room);
+//     if (!room) return null;
+
+//     // Check if existing codes are still active
+//     const codeCheckRes = await fetch(
+//         `${HMS_ENDPOINT}/room-codes/room/${room.room_id}`,
+//         {
+//             method: 'GET',
+//             headers: {
+//                 Authorization: `Bearer ${getMgmToken()}`,
+//             },
+//         }
+//     );
+//     const codeData = await codeCheckRes.json();
+//     console.log('Code json=============================>', codeData);
+//     const activeCodes = codeData.data?.filter((c: any) => c.enabled === true);
+
+//     if (activeCodes && activeCodes.length > 0) {
+//         console.log('in site active codes', activeCodes);
+//         // ✅ Codes still valid, return as-is
+//         return { ...room.toObject(), roomCodes: activeCodes };
+//     }
+
+//     console.log('nice to meet you ');
+//     // ♻️ Codes expired or disabled, regenerate
+//     const freshRoomCodes = await createRoomCodesForAllRoles(room.room_id);
+//     console.log('freesh room code', freshRoomCodes);
+//     await StreamRoom.findByIdAndUpdate(room._id, { roomCodes: freshRoomCodes });
+
+//     return { ...room.toObject(), roomCodes: freshRoomCodes };
+// };
+
+const getMyLiveRoom = async (profileId: string) => {
+    const room = await StreamRoom.findOne({ host: profileId });
+    if (!room) return null;
+
+    // Check if room is still active on 100ms
+    const codeCheckRes = await fetch(
+        `${HMS_ENDPOINT}/room-codes/room/${room.room_id}`,
+        {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${getMgmToken()}` },
+        }
+    );
+    const codeData = await codeCheckRes.json();
+
+    // ✅ Room is active, return codes
+    if (codeData.data && codeData.data.length > 0) {
+        console.log('activecodes', codeData.data);
+        const activeCodes = codeData.data.filter(
+            (c: any) => c.enabled === true
+        );
+        return { ...room.toObject(), roomCodes: activeCodes };
+    }
+
+    // ❌ Room is dead on 100ms (403 room not active)
+    // Create a completely new room on 100ms
+    console.log('Room is dead, creating new room on 100ms...');
+
+    const name = generateRoomName();
+    const newRoomRes = await fetch(`${HMS_ENDPOINT}/rooms`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getMgmToken()}`,
+        },
+        body: JSON.stringify({
+            name,
+            template_id: config.hms.template_id,
+        }),
+    });
+    const newRoomData = await newRoomRes.json();
+    console.log('New room created:', newRoomData);
+
+    // Generate codes for new room
+    const freshRoomCodes = await createRoomCodesForAllRoles(newRoomData.id);
+    console.log('Fresh room codes:', freshRoomCodes);
+
+    // Update DB with new room details
+    await StreamRoom.findByIdAndUpdate(room._id, {
+        room_id: newRoomData.id,
+        name,
+        roomCodes: freshRoomCodes,
+        status: ENUM_LIVE_STREAM_STATUS.ended,
+    });
+
+    return {
+        ...room.toObject(),
+        room_id: newRoomData.id,
+        roomCodes: freshRoomCodes,
+    };
+};
 const LiveStreamingServices = {
     createStreamingRoom,
     getJoinToken,

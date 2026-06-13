@@ -18,4 +18,8 @@ export interface IPodcast {
     totalView: number;
     duration: number;
     likers: Types.ObjectId[];
+    station?: Types.ObjectId | null;
+    createdAt: Date;
+    updatedAt: Date;
+    totalLikes: number;
 }

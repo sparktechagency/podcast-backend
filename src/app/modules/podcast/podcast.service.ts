@@ -18,7 +18,8 @@ import { USER_ROLE } from '../user/user.constant';
 import WatchHistory from '../watchHistory/watchHistory.model';
 import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
-const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
+const createPodcastIntoDB = async (userData: JwtPayload, payload: IPodcast) => {
+    const userId = userData.profileId as string;
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
         SubCategory.findById(payload.subCategory),
@@ -35,102 +36,74 @@ const createPodcastIntoDB = async (userId: string, payload: IPodcast) => {
         payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
     }
 
-    // if (payload.podcast_url) {
-    //     const rawKey = payload.podcast_url.replace(/^https?:\/\/[^/]+\/?/, '');
-    //     console.log('raw key', rawKey);
-    //     const hlsUrl = await startMediaConvertJob(rawKey);
-
-    //     // Replace podcast_url with HLS URL
-    //     payload.podcast_url = hlsUrl;
-    // }
-
     if (payload.coverImage) {
         payload.coverImage = getCloudFrontUrl(payload.coverImage);
     }
 
+    if (userData.role == USER_ROLE.superAdmin) {
+        return await Podcast.create({ ...payload });
+    }
     return await Podcast.create({ ...payload, creator: userId });
 };
 
 const updatePodcastIntoDB = async (
-    userId: string,
+    userData: JwtPayload,
     id: string,
     payload: Partial<IPodcast>
 ) => {
-    const podcast = await Podcast.findOne({ _id: id, creator: userId });
-    if (!podcast) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
-    }
+    if (userData.role == USER_ROLE.creator) {
+        const userId = userData.profileId as string;
+        const podcast = await Podcast.findOne({ _id: id, creator: userId });
+        if (!podcast) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
+        }
 
-    const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
-        new: true,
-        runValidators: true,
-    });
+        if (payload.podcast_url) {
+            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        }
 
-    if (payload.podcast_url) {
-        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
-        deleteFileFromS3(podcast?.podcast_url as string);
-    }
-    if (payload.podcast_url) {
-        payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
-        deleteFileFromS3(podcast?.podcast_url as string);
-    }
+        const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
+            new: true,
+            runValidators: true,
+        });
 
-    if (payload.coverImage && podcast?.coverImage) {
-        deleteFileFromS3(podcast?.coverImage);
-    }
+        if (payload.podcast_url) {
+            deleteFileFromS3(podcast?.podcast_url as string);
+        }
 
-    return reuslt;
+        if (payload.coverImage && podcast?.coverImage) {
+            deleteFileFromS3(podcast?.coverImage);
+        }
+
+        return reuslt;
+    } else {
+        const podcast = await Podcast.findOne({
+            _id: id,
+            station: { $ne: null },
+        });
+        if (!podcast) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
+        }
+        if (payload.podcast_url) {
+            payload.podcast_url = getCloudFrontUrl(payload.podcast_url);
+        }
+
+        const reuslt = await Podcast.findByIdAndUpdate(id, payload, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (payload.podcast_url) {
+            deleteFileFromS3(podcast?.podcast_url as string);
+        }
+
+        if (payload.coverImage && podcast?.coverImage) {
+            deleteFileFromS3(podcast?.coverImage);
+        }
+
+        return reuslt;
+    }
 };
-
-// const getAllPodcasts = async (query: Record<string, unknown>) => {
-//     const cacheKey = createCacheKey(query);
-
-//     // 1. Try to get cached data from Redis
-//     const cachedData = await redis.get(cacheKey);
-//     if (cachedData) {
-//         // Cache hit - parse and return
-//         return JSON.parse(cachedData);
-//     }
-
-//     const filterQuery: any = {};
-//     if (query.reels) {
-//         filterQuery.duration = { $lte: 60 };
-//         delete query.reels;
-//     }
-
-//     if (query.popular) {
-//         query.sort = '-totalView';
-//         delete query.popular;
-//     }
-
-//     const resultQuery = new QueryBuilder(
-//         Podcast.find({ ...filterQuery }).populate([
-//             { path: 'creator', select: 'name profile_image donationLink' },
-//             { path: 'category', select: 'name' },
-//             { path: 'subCategory', select: 'name' },
-//         ]),
-//         query
-//     )
-//         .search(['name', 'title', 'description'])
-//         .fields()
-//         .filter()
-//         .paginate()
-//         .sort();
-
-//     const result = await resultQuery.modelQuery;
-//     const meta = await resultQuery.countTotal();
-//     const dataToCache = { meta, result };
-
-//     // 3. Store result in Redis cache with TTL
-//     await redis.set(
-//         cacheKey,
-//         JSON.stringify(dataToCache),
-//         'EX',
-//         CACHE_TTL_SECONDS
-//     );
-
-//     return dataToCache;
-// };
 
 const getAllPodcasts = async (
     query: Record<string, any>
@@ -155,7 +128,7 @@ const getAllPodcasts = async (
                 as: 'creator',
             },
         },
-        { $unwind: '$creator' },
+        { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
                 from: 'categories',
@@ -165,6 +138,16 @@ const getAllPodcasts = async (
             },
         },
         { $unwind: '$category' },
+
+        {
+            $lookup: {
+                from: 'stations',
+                localField: 'station',
+                foreignField: '_id',
+                as: 'station',
+            },
+        },
+        { $unwind: { path: '$station', preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
                 from: 'subcategories',
@@ -223,6 +206,7 @@ const getAllPodcasts = async (
                             location: 1,
                             category: { _id: 1, name: 1 },
                             subCategory: { _id: 1, name: 1 },
+                            station: { _id: 1, name: 1, profile_image: 1 },
                             creator: {
                                 _id: 1,
                                 name: 1,
@@ -271,255 +255,92 @@ const getAllPodcasts = async (
     };
 };
 const getMyPodcasts = async (
-    profileId: string,
+    userData: JwtPayload,
     query: Record<string, unknown>
 ) => {
-    const cacheKey = `user:${profileId}:${createCacheKey(query)}`;
+    if (userData.role == USER_ROLE.creator) {
+        const profileId = userData.profileId;
+        const cacheKey = `user:${profileId}:${createCacheKey(query)}`;
 
-    // 1. Try to get cached data from Redis
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-        // Cache hit - parse and return
-        return JSON.parse(cachedData);
+        // 1. Try to get cached data from Redis
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            // Cache hit - parse and return
+            return JSON.parse(cachedData);
+        }
+
+        const filterQuery: any = {};
+        if (query.reels) {
+            filterQuery.duration = { $lte: 60 };
+            delete query.reels;
+        }
+
+        if (query.popular) {
+            query.sort = '-totalView';
+            delete query.popular;
+        }
+
+        const resultQuery = new QueryBuilder(
+            Podcast.find({ ...filterQuery, creator: profileId }).populate([
+                { path: 'creator', select: 'name profile_image' },
+                { path: 'category', select: 'name' },
+                { path: 'subCategory', select: 'name' },
+            ]),
+            query
+        )
+            .search(['name', 'title', 'description'])
+            .fields()
+            .filter()
+            .paginate()
+            .sort();
+
+        const result = await resultQuery.modelQuery;
+        const meta = await resultQuery.countTotal();
+        const dataToCache = { meta, result };
+
+        // 3. Store result in Redis cache with TTL
+        await redis.set(
+            cacheKey,
+            JSON.stringify(dataToCache),
+            'EX',
+            CACHE_TTL_SECONDS
+        );
+
+        return dataToCache;
+    } else {
+        const filterQuery: any = {};
+        if (query.reels) {
+            filterQuery.duration = { $lte: 60 };
+            delete query.reels;
+        }
+
+        if (query.popular) {
+            query.sort = '-totalView';
+            delete query.popular;
+        }
+
+        const resultQuery = new QueryBuilder(
+            Podcast.find({ ...filterQuery, station: { $ne: null } }).populate([
+                // { path: 'creator', select: 'name profile_image' },
+                { path: 'station', select: 'name profile_image donationLink' },
+                { path: 'category', select: 'name' },
+                { path: 'subCategory', select: 'name' },
+            ]),
+            query
+        )
+            .search(['name', 'title', 'description'])
+            .fields()
+            .filter()
+            .paginate()
+            .sort();
+
+        const result = await resultQuery.modelQuery;
+        const meta = await resultQuery.countTotal();
+        const dataToCache = { meta, result };
+
+        return dataToCache;
     }
-
-    const filterQuery: any = {};
-    if (query.reels) {
-        filterQuery.duration = { $lte: 60 };
-        delete query.reels;
-    }
-
-    if (query.popular) {
-        query.sort = '-totalView';
-        delete query.popular;
-    }
-
-    const resultQuery = new QueryBuilder(
-        Podcast.find({ ...filterQuery, creator: profileId }).populate([
-            { path: 'creator', select: 'name profile_image' },
-            { path: 'category', select: 'name' },
-            { path: 'subCategory', select: 'name' },
-        ]),
-        query
-    )
-        .search(['name', 'title', 'description'])
-        .fields()
-        .filter()
-        .paginate()
-        .sort();
-
-    const result = await resultQuery.modelQuery;
-    const meta = await resultQuery.countTotal();
-    const dataToCache = { meta, result };
-
-    // 3. Store result in Redis cache with TTL
-    await redis.set(
-        cacheKey,
-        JSON.stringify(dataToCache),
-        'EX',
-        CACHE_TTL_SECONDS
-    );
-
-    return dataToCache;
 };
-
-// const getPodcastFeedForUser = async (
-//     userId: string,
-//     query: Record<string, unknown>
-// ) => {
-//     const page = Number(query.page) || 1;
-//     const limit = Number(query.limit) || 20;
-//     const skip = (page - 1) * limit;
-
-//     const lng = (query.lng as number) || undefined;
-//     const lat = (query.lat as number) || undefined;
-//     const categoryId = query.category as string | undefined;
-//     const subCategoryId = query.subCategory as string | undefined;
-//     const searchTerm = query.searchTerm as string | undefined;
-
-//     // Step 1: Redis caches
-//     const [cachedLikedPods, cachedBookmarksAndWatched] = await Promise.all([
-//         redis.get(`likedPods:${userId}`),
-//         redis.get(`bookmarksAndWatched:${userId}`),
-//     ]);
-
-//     let likedPods: any[] = [];
-//     if (cachedLikedPods) {
-//         likedPods = JSON.parse(cachedLikedPods);
-//     } else {
-//         likedPods = await Podcast.find({ 'likers.user': userId })
-//             .select('category subCategory')
-//             .limit(50)
-//             .lean();
-//         await redis.set(
-//             `likedPods:${userId}`,
-//             JSON.stringify(likedPods),
-//             'EX',
-//             300
-//         );
-//     }
-
-//     let bookmarks: any[] = [];
-//     let watched: any[] = [];
-//     if (cachedBookmarksAndWatched) {
-//         const parsed = JSON.parse(cachedBookmarksAndWatched);
-//         bookmarks = parsed.bookmarks || [];
-//         watched = parsed.watched || [];
-//     } else {
-//         [bookmarks, watched] = await Promise.all([
-//             Bookmark.find({ user: userId }).select('podcast').lean(),
-//             WatchHistory.find({ user: userId }).select('podcast').lean(),
-//         ]);
-//         await redis.set(
-//             `bookmarksAndWatched:${userId}`,
-//             JSON.stringify({ bookmarks, watched }),
-//             'EX',
-//             300
-//         );
-//     }
-
-//     const bookmarkedPodcastIds = new Set(
-//         bookmarks.map((b) => b.podcast.toString())
-//     );
-//     const watchedIds = watched.map((w) => w.podcast.toString());
-
-//     const topCategories = [
-//         ...new Set(likedPods.map((p) => p.category?.toString())),
-//     ];
-//     const topSubCategories = [
-//         ...new Set(likedPods.map((p) => p.subCategory?.toString())),
-//     ];
-
-//     // Step 2: Build query
-//     const queryData: any = {
-//         _id: { $nin: watchedIds },
-//         $and: [],
-//     };
-//     //=----
-//     if (
-//         typeof lat === 'number' &&
-//         !isNaN(lat) &&
-//         typeof lng === 'number' &&
-//         !isNaN(lng)
-//     ) {
-//         queryData.location = {
-//             $nearSphere: {
-//                 $geometry: { type: 'Point', coordinates: [lng, lat] },
-//                 $maxDistance: 100 * 1000,
-//             },
-//         };
-//     }
-
-//     if (categoryId) queryData.$and.push({ category: categoryId });
-//     if (subCategoryId) queryData.$and.push({ subCategory: subCategoryId });
-//     if (searchTerm)
-//         queryData.$and.push({ title: { $regex: new RegExp(searchTerm, 'i') } });
-//     if (query.reels) queryData.$and.push({ duration: { $lte: 60 } });
-
-//     if (!categoryId && !subCategoryId && !searchTerm) {
-//         const ors = [];
-//         if (topCategories.length)
-//             ors.push({ category: { $in: topCategories } });
-//         if (topSubCategories.length)
-//             ors.push({ subCategory: { $in: topSubCategories } });
-//         if (ors.length) queryData.$and.push({ $or: ors });
-//     }
-
-//     if (queryData.$and.length === 0) delete queryData.$and;
-
-//     const sortField = query.popular ? 'totalView' : 'createdAt';
-
-//     // Step 3: Query personalized podcasts
-//     let podcasts: any = await Podcast.find(queryData)
-//         .sort({ [sortField]: -1 })
-//         .skip(skip)
-//         .limit(limit)
-//         .select(
-//             'title coverImage podcast_url category subCategory location duration createdAt creator'
-//         )
-//         .populate('category', 'name')
-//         .populate('subCategory', 'name')
-//         .populate('creator', 'name donationLink profile_image')
-//         .lean();
-
-//     let isFallback = false;
-
-//     // Step 4: Fallback if no results → random unwatched
-//     if (!podcasts.length) {
-//         isFallback = true;
-//         podcasts = await Podcast.aggregate([
-//             { $match: { _id: { $nin: watchedIds } } },
-//             { $sample: { size: limit } },
-//             {
-//                 $project: {
-//                     title: 1,
-//                     coverImage: 1,
-//                     podcast_url: 1,
-//                     category: 1,
-//                     subCategory: 1,
-//                     location: 1,
-//                     duration: 1,
-//                     createdAt: 1,
-//                     creator: 1,
-//                 },
-//             },
-//         ]);
-
-//         // populate after aggregation
-//         podcasts = await Podcast.populate(podcasts, [
-//             { path: 'category', select: 'name' },
-//             { path: 'subCategory', select: 'name' },
-//             { path: 'creator', select: 'name donationLink profile_image' },
-//         ]);
-//     }
-
-//     // Step 5: firstPodcastId handling
-//     if (query.firstPodcastId) {
-//         const firstPodcast = await Podcast.findById(query.firstPodcastId)
-//             .select(
-//                 'title coverImage podcast_url category subCategory location duration createdAt creator'
-//             )
-//             .populate('category', 'name')
-//             .populate('subCategory', 'name')
-//             .populate('creator', 'name donationLink profile_image')
-//             .lean();
-//         if (firstPodcast) {
-//             const isBookmarked = bookmarkedPodcastIds.has(
-//                 firstPodcast._id.toString()
-//             );
-//             podcasts.unshift({ ...firstPodcast, isBookmark: isBookmarked });
-//         }
-//     }
-
-//     // Step 6: Add flags
-//     const likedPodcastIds = new Set(likedPods.map((p) => p._id?.toString()));
-//     const podcastsWithFlags = podcasts.map((podcast: any) => ({
-//         ...podcast,
-//         isBookmark: bookmarkedPodcastIds.has(podcast._id.toString()),
-//         isLike: likedPodcastIds.has(podcast._id.toString()),
-//     }));
-
-//     // Step 7: Pagination info
-//     let totalPodcasts = 0;
-//     let totalPages = 0;
-//     if (!isFallback) {
-//         totalPodcasts = await Podcast.countDocuments(queryData);
-//         totalPages = Math.ceil(totalPodcasts / limit);
-//     } else {
-//         // fallback: just approximate
-//         totalPodcasts = podcasts.length;
-//         totalPages = 1;
-//     }
-
-//     return {
-//         podcasts: podcastsWithFlags,
-//         page,
-//         limit,
-//         totalPages,
-//         totalPodcasts,
-//         hasMore: page < totalPages,
-//     };
-// };
 
 // for randomize ===================================
 
@@ -580,6 +401,7 @@ export const getPodcastFeedForUser = async (
         .populate('category', 'name')
         .populate('subCategory', 'name')
         .populate('creator', 'name donationLink profile_image')
+        .populate('station', 'name profile_image donationLink')
         .lean();
 
     if (!firstPodcast) throw new Error('First podcast not found');
@@ -644,6 +466,15 @@ export const getPodcastFeedForUser = async (
         { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
         {
             $lookup: {
+                from: 'stations',
+                localField: 'station',
+                foreignField: '_id',
+                as: 'station',
+            },
+        },
+        { $unwind: { path: '$station', preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
                 from: 'categories',
                 localField: 'category',
                 foreignField: '_id',
@@ -671,6 +502,7 @@ export const getPodcastFeedForUser = async (
                 duration: 1,
                 createdAt: 1,
                 creator: { name: 1, donationLink: 1, profile_image: 1 },
+                station: { name: 1, profile_image: 1, donationLink: 1 },
             },
         },
         { $limit: limit },
@@ -717,6 +549,10 @@ const getSinglePodcast = async (id: string) => {
             select: 'name profile_image',
         },
         {
+            path: 'station',
+            select: 'name profile_image donationLink',
+        },
+        {
             path: 'category',
             select: 'name',
         },
@@ -732,20 +568,40 @@ const getSinglePodcast = async (id: string) => {
     return podcast;
 };
 
-const deletePodcastFromDB = async (userId: string, id: string) => {
-    const podcast = await Podcast.findOne({ _id: id, creator: userId });
-    if (!podcast) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
+const deletePodcastFromDB = async (userData: JwtPayload, id: string) => {
+    if (userData.role == USER_ROLE.creator) {
+        const userId = userData.profileId as string;
+        const podcast = await Podcast.findOne({ _id: id, creator: userId });
+        if (!podcast) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
+        }
+        if (podcast.podcast_url) {
+            const podcastUrl = getCloudFrontUrl(podcast.podcast_url);
+            deleteFileFromS3(podcastUrl);
+        }
+        if (podcast.coverImage) {
+            const coverImageUrl = getCloudFrontUrl(podcast.coverImage);
+            deleteFileFromS3(coverImageUrl);
+        }
+        return await Podcast.findByIdAndDelete(id);
+    } else {
+        const podcast = await Podcast.findOne({
+            _id: id,
+            station: { $ne: null },
+        });
+        if (!podcast) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
+        }
+        if (podcast.podcast_url) {
+            const podcastUrl = getCloudFrontUrl(podcast.podcast_url);
+            deleteFileFromS3(podcastUrl);
+        }
+        if (podcast.coverImage) {
+            const coverImageUrl = getCloudFrontUrl(podcast.coverImage);
+            deleteFileFromS3(coverImageUrl);
+        }
+        return await Podcast.findByIdAndDelete(id);
     }
-    if (podcast.podcast_url) {
-        podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-        deleteFileFromS3(podcast?.podcast_url);
-    }
-    if (podcast.podcast_url) {
-        podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-        deleteFileFromS3(podcast?.podcast_url);
-    }
-    return await Podcast.findByIdAndDelete(id);
 };
 
 const countPodcastView = async (profileId: string, podcastId: string) => {
@@ -776,27 +632,32 @@ const getHomeData = async () => {
         albums,
         topCreators,
     ] = await Promise.all([
-        Category.find().limit(10),
+        Category.find().limit(10).lean(),
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
+            .populate('station', 'name profile_image')
             .sort({ createdAt: -1 })
-            .limit(10),
+            .limit(10)
+            .lean(),
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
-
+            .populate('station', 'name profile_image')
             .sort({ totalView: -1 })
-            .limit(10),
+            .limit(10)
+            .lean(),
         Podcast.find({ duration: { $lte: 120 } })
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
+            .populate('station', 'name profile_image')
             .sort({ createdAt: -1 })
-            .limit(10),
-        Album.find().sort({ updatedAt: -1 }).limit(10),
+            .limit(10)
+            .lean(),
+        Album.find().sort({ updatedAt: -1 }).limit(10).lean(),
         // Podcast.aggregate([
         //     {
         //         $group: {
@@ -1126,14 +987,239 @@ const toggleLikePodcast = async (podcastId: string, userData: JwtPayload) => {
     if (isLiked) {
         await Podcast.findByIdAndUpdate(podcastId, {
             $pull: { likers: { user: userObjectId, userType } },
+            $inc: { totalLikes: -1 },
         });
         return { isLike: false };
     } else {
         await Podcast.findByIdAndUpdate(podcastId, {
             $push: { likers: { user: userObjectId, userType } },
+            $inc: { totalLikes: 1 },
         });
         return { isLike: true };
     }
+};
+
+const globalSearch = async (params: any) => {
+    const { searchTerm, lat, lng, page = 1, limit = 10 } = params;
+
+    if (!searchTerm?.trim()) {
+        return getDefaultFeed(params);
+    }
+
+    return searchWithKeyword({
+        searchTerm,
+        page,
+        limit,
+        lat,
+        lng,
+    });
+};
+
+const searchWithKeyword = async ({
+    searchTerm,
+    page,
+    limit,
+    lat,
+    lng,
+}: {
+    searchTerm: string;
+    page: number;
+    limit: number;
+    lat?: number;
+    lng?: number;
+}) => {
+    const skip = (page - 1) * limit;
+
+    const hasLocation = lat && lng;
+
+    const pipeline: any[] = [];
+
+    // 🔥 GEO SEARCH FIRST (if provided)
+    if (hasLocation) {
+        pipeline.push({
+            $geoNear: {
+                near: {
+                    type: 'Point',
+                    coordinates: [lng, lat], // ⚠️ lng first
+                },
+                distanceField: 'distance',
+                spherical: true,
+                query: searchTerm ? { $text: { $search: searchTerm } } : {},
+            },
+        });
+    } else if (searchTerm) {
+        pipeline.push({
+            $match: {
+                $text: { $search: searchTerm },
+            },
+        });
+
+        pipeline.push({
+            $addFields: {
+                score: { $meta: 'textScore' },
+            },
+        });
+    }
+
+    // 🔥 Common fields
+    pipeline.push(
+        {
+            $addFields: {
+                type: 'podcast',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                title: 1,
+                image: '$coverImage',
+                createdAt: 1,
+                score: hasLocation ? 0 : '$score',
+                distance: 1,
+                type: 1,
+            },
+        }
+    );
+
+    // 🔥 UNION WITH CREATORS (no geo for now or optional)
+    pipeline.push({
+        $unionWith: {
+            coll: 'creators',
+            pipeline: [
+                {
+                    $match: {
+                        isApproved: true,
+                        ...(searchTerm && {
+                            $text: { $search: searchTerm },
+                        }),
+                    },
+                },
+                {
+                    $addFields: {
+                        type: 'creator',
+                        score: searchTerm ? { $meta: 'textScore' } : 0,
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        image: '$profile_image',
+                        createdAt: 1,
+                        score: 1,
+                        type: 1,
+                    },
+                },
+            ],
+        },
+    });
+
+    // 🔥 SORT LOGIC (important)
+    pipeline.push({
+        $sort: hasLocation
+            ? { distance: 1, createdAt: -1 } // nearest first
+            : { score: -1, createdAt: -1 }, // relevance first
+    });
+
+    // 🔥 PAGINATION
+    pipeline.push({
+        $facet: {
+            data: [{ $skip: skip }, { $limit: Number(limit) }],
+            total: [{ $count: 'count' }],
+        },
+    });
+
+    const result = await Podcast.aggregate(pipeline);
+
+    const data = result[0]?.data || [];
+    const total = result[0]?.total[0]?.count || 0;
+
+    return {
+        meta: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+        data: data.map((item: any) => ({
+            id: item._id,
+            type: item.type,
+            title: item.title || null,
+            name: item.name || null,
+            image: item.image,
+            distance: item.distance || null,
+        })),
+    };
+};
+const getDefaultFeed = async ({
+    page,
+    limit,
+}: {
+    page: number;
+    limit: number;
+}) => {
+    const skip = (page - 1) * limit;
+
+    const [podcasts, creators, podcastCount, creatorCount] = await Promise.all([
+        Podcast.find({})
+            .sort({ totalView: -1, createdAt: -1, totalLikes: -1 })
+            .select('title coverImage totalView createdAt totalLikes')
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+
+        Creator.find({ isApproved: true })
+            .sort({ createdAt: -1 })
+            .select('name profile_image createdAt')
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+
+        Podcast.countDocuments(),
+        Creator.countDocuments({ isApproved: true }),
+    ]);
+
+    // normalize
+    const combined = [
+        ...podcasts.map((p) => ({
+            id: p._id,
+            type: 'podcast',
+            title: p.title,
+            image: p.coverImage,
+            createdAt: p.createdAt,
+            score: p.totalView || 0, // fake score for sorting
+        })),
+        ...creators.map((c) => ({
+            id: c._id,
+            type: 'creator',
+            name: c.name,
+            image: c.profile_image,
+            createdAt: c.createdAt,
+            score: 0,
+        })),
+    ];
+
+    //  sorting
+    combined.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    });
+
+    const paginated = combined.slice(0, limit);
+
+    const total = podcastCount + creatorCount;
+
+    return {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+        data: paginated,
+    };
 };
 const podcastService = {
     createPodcastIntoDB,
@@ -1147,6 +1233,7 @@ const podcastService = {
     getPodcastForSubcategories,
     getMyPodcasts,
     toggleLikePodcast,
+    globalSearch,
 };
 
 export default podcastService;

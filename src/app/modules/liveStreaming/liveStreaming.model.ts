@@ -22,12 +22,19 @@ const RecordingSchema: Schema = new Schema(
     },
     { _id: false }
 );
+
 const StreamRoomSchema = new Schema<IStreamRoom>(
     {
-        host: {
+        creator: {
             type: Schema.Types.ObjectId,
-            ref: 'NormalUser',
-            required: true,
+            ref: 'Creator',
+            default: null,
+        },
+
+        station: {
+            type: Schema.Types.ObjectId,
+            ref: 'Station',
+            default: null,
         },
         name: {
             type: String,

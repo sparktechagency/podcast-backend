@@ -44,6 +44,7 @@ export const uploadFile = () => {
             'sub_category_image',
             'album_cover',
             'liveCover',
+            'cover_image',
         ];
 
         if (file.fieldname === undefined) {
@@ -120,6 +121,8 @@ export const uploadFile = () => {
                 uploadPath = 'uploads/images/album_cover';
             } else if (file.fieldname === 'liveCover') {
                 uploadPath = 'uploads/images/liveCover';
+            } else if (file.fieldname === 'cover_image') {
+                uploadPath = 'uploads/images/cover_image';
             } else {
                 uploadPath = 'uploads';
             }
@@ -159,11 +162,12 @@ export const uploadFile = () => {
         { name: 'video', maxCount: 5 },
         { name: 'chat_videos', maxCount: 2 },
         { name: 'chat_images', maxCount: 7 },
-        { name: 'podcast_cover  ', maxCount: 1 },
+        { name: 'podcast_cover', maxCount: 1 },
         { name: 'sub_category_image', maxCount: 1 },
         { name: 'album_cover', maxCount: 1 },
         { name: 'profile_cover', maxCount: 1 },
         { name: 'liveCover', maxCount: 1 },
+        { name: 'cover_image', maxCount: 1 },
     ]);
 
     return upload;

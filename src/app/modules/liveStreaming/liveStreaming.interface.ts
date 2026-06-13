@@ -1,7 +1,8 @@
 import { Types } from 'mongoose';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
 export interface IStreamRoom {
-    host: Types.ObjectId;
+    creator: Types.ObjectId;
+    station: Types.ObjectId;
     name: string;
     description: string;
     template_id: string;

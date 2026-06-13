@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { ManageService } from './manage.service';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
+import { ManageService } from './manage.service';
 
 const addAboutUs = catchAsync(async (req: Request, res: Response) => {
     console.log('ip', req.ip);
