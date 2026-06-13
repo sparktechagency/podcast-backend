@@ -1,16 +1,50 @@
-import { model, Schema } from "mongoose";
-import { IStation } from "./station.interface";
+import { model, Schema } from 'mongoose';
+import { IStation } from './station.interface';
 
-const stationSchema = new Schema<IStation>({
-    user: { type: Schema.Types.ObjectId, required: true, ref: "User" },
-    name: { type: String, required: true },
-    phone: { type: String },
-    email: { type: String, required: true, unique: true },
-    address: { type: String },
-    profile_image: { type: String, default: "" },
-    totalAmount: { type: Number, default: 0 },
-    totalPoint: { type: Number, default: 0 }
-}, { timestamps: true });
+const StationSchema = new Schema<IStation>(
+    {
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        description: {
+            type: String,
+        },
+        location: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                required: true,
+                default: 'Point',
+            },
+            coordinates: {
+                type: [Number],
+                required: true,
+                validate: {
+                    validator: (value: number[]) => value.length === 2,
+                    message: 'Coordinates must be [longitude, latitude]',
+                },
+            },
+        },
+        address: {
+            type: String,
+        },
+        donationUrl: {
+            type: String,
+        },
+        profile_image: {
+            type: String,
+        },
+        cover_image: {
+            type: String,
+        },
+    },
+    {
+        timestamps: true,
+    }
+);
 
-const stationModel = model<IStation>("Station", stationSchema);
-export default stationModel;
+StationSchema.index({ location: '2dsphere' });
+
+export const Station = model<IStation>('Station', StationSchema);

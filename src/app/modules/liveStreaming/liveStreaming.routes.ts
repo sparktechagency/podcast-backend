@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post(
     '/create-streaming-room',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.admin, USER_ROLE.superAdmin),
     liveStreamingController.createStreamingRoom
 );
 router.post(

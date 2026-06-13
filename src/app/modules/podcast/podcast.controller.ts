@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
+import generateETag from '../../helper/generateEtag';
+import { getCloudFrontUrl } from '../../helper/mutler-s3-uploader';
 import catchAsync from '../../utilities/catchasync';
 import sendResponse from '../../utilities/sendResponse';
 import podcastService from './podcast.service';
-import generateETag from '../../helper/generateEtag';
 
 const createPodcast = catchAsync(async (req, res) => {
-    const result = await podcastService.createPodcastIntoDB(
-        req.user.profileId,
-        req.body
-    );
+    const result = await podcastService.createPodcastIntoDB(req.user, req.body);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -19,8 +17,12 @@ const createPodcast = catchAsync(async (req, res) => {
 });
 
 const updatePodcast = catchAsync(async (req, res) => {
+    const file: any = req.files?.podcast_cover;
+    if (file) {
+        req.body.coverImage = getCloudFrontUrl(file[0].key);
+    }
     const result = await podcastService.updatePodcastIntoDB(
-        req.user.profileId,
+        req.user,
         req.params.id,
         req.body
     );
@@ -90,7 +92,7 @@ const getSinglePodcast = catchAsync(async (req, res) => {
 
 const deletePodcast = catchAsync(async (req, res) => {
     const result = await podcastService.deletePodcastFromDB(
-        req.user.profileId,
+        req.user,
 
         req.params.id
     );
@@ -145,6 +147,15 @@ const toggleLikePodcast = catchAsync(async (req, res) => {
         data: result,
     });
 });
+const globalSearch = catchAsync(async (req, res) => {
+    const result = await podcastService.globalSearch(req.query);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Global search results retrieved successfully',
+        data: result,
+    });
+});
 
 const podcastController = {
     createPodcast,
@@ -158,6 +169,7 @@ const podcastController = {
     getPodcastForSubcategories,
     getMyPodcasts,
     toggleLikePodcast,
+    globalSearch,
 };
 
 export default podcastController;

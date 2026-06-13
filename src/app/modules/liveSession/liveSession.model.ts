@@ -6,9 +6,16 @@ const liveSessionSchema: Schema<ILiveSession> = new Schema(
     {
         creator: {
             type: Schema.Types.ObjectId,
-            ref: 'Creator', // Assuming you have a User model
-            required: true,
+            ref: 'Creator',
+            default: null,
         },
+
+        station: {
+            type: Schema.Types.ObjectId,
+            ref: 'Station',
+            default: null,
+        },
+
         name: {
             type: String,
             default: '',
@@ -42,8 +49,8 @@ const liveSessionSchema: Schema<ILiveSession> = new Schema(
             default: '',
         },
         session_started_at: {
-            type: String,
-            default: '',
+            type: Date,
+            default: null,
         },
         duration: {
             type: Number,

@@ -16,6 +16,7 @@ import { notificationRoutes } from '../modules/notification/notification.routes'
 import { podcastPlaylistRoutes } from '../modules/playlist/playlist.routes';
 import { podcastRoutes } from '../modules/podcast/podcast.routes';
 import { reportRoutes } from '../modules/report/report.routes';
+import { stationRoutes } from '../modules/station/station.routes';
 import { subCategoryRoutes } from '../modules/subCategory/subCategory.routes';
 import { superAdminRoutes } from '../modules/superAdmin/superAdmin.routes';
 import { userRoutes } from '../modules/user/user.routes';
@@ -109,6 +110,10 @@ const moduleRoutes = [
     {
         path: '/report',
         router: reportRoutes,
+    },
+    {
+        path: '/station',
+        router: stationRoutes,
     },
 ];
 
