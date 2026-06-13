@@ -42,7 +42,7 @@
 #                   ssh $EC2_USER@$EC2_HOST "sudo docker ps -q -f name=podcast-redis || sudo docker run -d --name podcast-redis -p 6379:6379 --restart unless-stopped redis:latest"
 #                   ssh $EC2_USER@$EC2_HOST "sudo docker rm -f podcast-backend || true"
 #                   ssh $EC2_USER@$EC2_HOST "sudo docker run -d --name podcast-backend -p 5000:5000 --env-file ~/applications/backend/.env ${{ secrets.DOCKERHUB_USERNAME }}/podcast-backend:latest"
-
+# for the deployment for nodejs and redis without password authentication. If you want to use password authentication for redis, you can use the commented out section below which includes the steps to create a redis.conf file with the requirepass directive and mount it as a volume when running the redis container.
 name: Deploy Node.js + Redis on EC2 with Docker
 
 on:
