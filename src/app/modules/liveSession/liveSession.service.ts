@@ -15,7 +15,8 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
         throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
     }
     payload.streamRoom = streamRoom._id;
-    payload.creator = streamRoom.host;
+    payload.creator = streamRoom?.creator || null;
+    payload.station = streamRoom?.station || null;
     await LiveSession.create(payload);
     await redis.del('home:data');
 };
@@ -99,7 +100,26 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
                 as: 'creatorDetails',
             },
         },
-        { $unwind: '$creatorDetails' },
+        {
+            $unwind: {
+                path: '$creatorDetails',
+                preserveNullAndEmptyArrays: true,
+            },
+        },
+        {
+            $lookup: {
+                from: 'stations',
+                localField: 'station',
+                foreignField: '_id',
+                as: 'stationDetails',
+            },
+        },
+        {
+            $unwind: {
+                path: '$stationDetails',
+                preserveNullAndEmptyArrays: true,
+            },
+        },
         {
             $project: {
                 _id: 1,
@@ -118,6 +138,10 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
                 creator: {
                     name: '$creatorDetails.name',
                     profile_image: '$creatorDetails.profile_image',
+                },
+                station: {
+                    name: '$stationDetails.name',
+                    profile_image: '$stationDetails.profile_image',
                 },
             },
         },
@@ -203,7 +227,7 @@ const getMyLivesessions = async (
     const result = aggResult[0]?.result || [];
     const total = aggResult[0]?.totalCount[0]?.total || 0;
     const totalPage = Math.ceil(total / limit);
-
+    console.log('Result previous stream', result);
     return {
         meta: {
             page,

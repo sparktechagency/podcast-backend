@@ -24,7 +24,7 @@ router.patch(
 
 router.get(
     '/get-previous-live',
-    auth(USER_ROLE.creator, USER_ROLE.user),
+    auth(USER_ROLE.creator, USER_ROLE.user, USER_ROLE.superAdmin),
     liveSessionController.getAllLiveSessions
 );
 router.get(

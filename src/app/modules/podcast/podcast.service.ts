@@ -19,7 +19,6 @@ import WatchHistory from '../watchHistory/watchHistory.model';
 import { IPodcast } from './podcast.interface';
 import Podcast from './podcast.model';
 const createPodcastIntoDB = async (userData: JwtPayload, payload: IPodcast) => {
-    console.log('Creating podcast with payload:', payload); // Debug log
     const userId = userData.profileId as string;
     const [category, subCategory] = await Promise.all([
         Category.findById(payload.category),
@@ -577,12 +576,12 @@ const deletePodcastFromDB = async (userData: JwtPayload, id: string) => {
             throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
         }
         if (podcast.podcast_url) {
-            podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url);
+            const podcastUrl = getCloudFrontUrl(podcast.podcast_url);
+            deleteFileFromS3(podcastUrl);
         }
-        if (podcast.podcast_url) {
-            podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url);
+        if (podcast.coverImage) {
+            const coverImageUrl = getCloudFrontUrl(podcast.coverImage);
+            deleteFileFromS3(coverImageUrl);
         }
         return await Podcast.findByIdAndDelete(id);
     } else {
@@ -594,12 +593,12 @@ const deletePodcastFromDB = async (userData: JwtPayload, id: string) => {
             throw new AppError(httpStatus.NOT_FOUND, 'Podcast not found');
         }
         if (podcast.podcast_url) {
-            podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url);
+            const podcastUrl = getCloudFrontUrl(podcast.podcast_url);
+            deleteFileFromS3(podcastUrl);
         }
-        if (podcast.podcast_url) {
-            podcast.podcast_url = getCloudFrontUrl(podcast.podcast_url);
-            deleteFileFromS3(podcast?.podcast_url);
+        if (podcast.coverImage) {
+            const coverImageUrl = getCloudFrontUrl(podcast.coverImage);
+            deleteFileFromS3(coverImageUrl);
         }
         return await Podcast.findByIdAndDelete(id);
     }
@@ -633,30 +632,32 @@ const getHomeData = async () => {
         albums,
         topCreators,
     ] = await Promise.all([
-        Category.find().limit(10),
+        Category.find().limit(10).lean(),
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
             .populate('station', 'name profile_image')
             .sort({ createdAt: -1 })
-            .limit(10),
+            .limit(10)
+            .lean(),
         Podcast.find()
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
             .populate('station', 'name profile_image')
-
             .sort({ totalView: -1 })
-            .limit(10),
+            .limit(10)
+            .lean(),
         Podcast.find({ duration: { $lte: 120 } })
             .populate({ path: 'category', select: 'name' })
             .populate('subCategory', 'name')
             .populate('creator', 'name profile_image')
             .populate('station', 'name profile_image')
             .sort({ createdAt: -1 })
-            .limit(10),
-        Album.find().sort({ updatedAt: -1 }).limit(10),
+            .limit(10)
+            .lean(),
+        Album.find().sort({ updatedAt: -1 }).limit(10).lean(),
         // Podcast.aggregate([
         //     {
         //         $group: {
@@ -1123,7 +1124,7 @@ const searchWithKeyword = async ({
     // 🔥 PAGINATION
     pipeline.push({
         $facet: {
-            data: [{ $skip: skip }, { $limit: limit }],
+            data: [{ $skip: skip }, { $limit: Number(limit) }],
             total: [{ $count: 'count' }],
         },
     });
