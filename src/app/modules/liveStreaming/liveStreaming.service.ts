@@ -191,8 +191,12 @@ const endLiveAndStoreRecordings = async (roomId: string) => {
 //     return { ...room.toObject(), roomCodes: freshRoomCodes };
 // };
 
-const getMyLiveRoom = async (profileId: string) => {
-    const room = await StreamRoom.findOne({ host: profileId });
+const getMyLiveRoom = async (userData: JwtPayload) => {
+    console.log('profile id from get my live room', userData.profileId);
+    const profileId = userData.profileId;
+    const room = await StreamRoom.findOne({
+        $or: [{ creator: profileId }, { station: profileId }],
+    });
     if (!room) return null;
 
     // Check if room is still active on 100ms
@@ -203,9 +207,10 @@ const getMyLiveRoom = async (profileId: string) => {
             headers: { Authorization: `Bearer ${getMgmToken()}` },
         }
     );
+
     const codeData = await codeCheckRes.json();
 
-    // ✅ Room is active, return codes
+    //  Room is active, return codes
     if (codeData.data && codeData.data.length > 0) {
         console.log('activecodes', codeData.data);
         const activeCodes = codeData.data.filter(
@@ -214,7 +219,7 @@ const getMyLiveRoom = async (profileId: string) => {
         return { ...room.toObject(), roomCodes: activeCodes };
     }
 
-    // ❌ Room is dead on 100ms (403 room not active)
+    // Room is dead on 100ms (403 room not active)
     // Create a completely new room on 100ms
     console.log('Room is dead, creating new room on 100ms...');
 

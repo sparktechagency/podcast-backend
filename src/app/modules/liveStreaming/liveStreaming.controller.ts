@@ -48,9 +48,7 @@ const endLiveAndStoreRecordings = catchAsync(async (req, res) => {
     });
 });
 const getMyLiveRoom = catchAsync(async (req, res) => {
-    const result = await liveStreamingServices.getMyLiveRoom(
-        req.user.profileId
-    );
+    const result = await liveStreamingServices.getMyLiveRoom(req.user);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
