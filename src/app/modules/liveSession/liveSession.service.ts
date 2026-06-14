@@ -10,14 +10,27 @@ import { ILiveSession } from './liveSession.interface';
 import LiveSession from './liveSession.model';
 
 const createLiveSession = async (payload: Partial<ILiveSession>) => {
-    const streamRoom = await StreamRoom.findOne({ room_id: payload.room_id });
+    console.log('createLiveSession called', payload);
+
+    const streamRoom = await StreamRoom.findOne({
+        room_id: payload.room_id,
+    });
+
+    console.log('streamRoom found:', streamRoom);
+
     if (!streamRoom) {
+        console.log('Room not found');
         throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
     }
+
     payload.streamRoom = streamRoom._id;
-    payload.creator = streamRoom?.creator || null;
-    payload.station = streamRoom?.station || null;
-    await LiveSession.create(payload);
+
+    console.log('Creating session...');
+
+    const session = await LiveSession.create(payload);
+
+    console.log('Session created:', session._id);
+
     await redis.del('home:data');
 };
 
