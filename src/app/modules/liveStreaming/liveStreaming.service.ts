@@ -192,11 +192,17 @@ const endLiveAndStoreRecordings = async (roomId: string) => {
 // };
 
 const getMyLiveRoom = async (userData: JwtPayload) => {
-    console.log('profile id from get my live room', userData.profileId);
-    const profileId = userData.profileId;
-    const room = await StreamRoom.findOne({
-        $or: [{ creator: profileId }, { station: profileId }],
-    });
+    let room: any;
+    if (userData.role === USER_ROLE.creator) {
+        room = await StreamRoom.findOne({
+            creator: userData.profileId,
+        });
+    } else {
+        const station = await Station.findOne();
+        room = await StreamRoom.findOne({
+            station: station?._id,
+        });
+    }
     if (!room) return null;
 
     // Check if room is still active on 100ms
