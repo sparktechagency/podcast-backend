@@ -9,6 +9,7 @@ import AppError from '../../error/appError';
 import { ENUM_NOTIFICATION_TYPE } from '../../utilities/enum';
 import { getMgmToken } from '../../utilities/getMgmToken';
 import Notification from '../notification/notification.model';
+import { Station } from '../station/station.model';
 import { USER_ROLE } from '../user/user.constant';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
 import {
@@ -51,8 +52,10 @@ const createStreamingRoom = async (userData: JwtPayload) => {
             roomCodes,
         });
     } else {
+        const station = await Station.findOne();
+        console.log('station data=========================>', station);
         await StreamRoom.create({
-            station: userData.profileId,
+            station: station?._id,
             name,
             template_id: config.hms.template_id,
             room_id: roomData.id,
