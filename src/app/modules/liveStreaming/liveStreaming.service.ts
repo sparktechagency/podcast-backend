@@ -8,6 +8,8 @@ import { HMS_ENDPOINT } from '../../constant';
 import AppError from '../../error/appError';
 import { ENUM_NOTIFICATION_TYPE } from '../../utilities/enum';
 import { getMgmToken } from '../../utilities/getMgmToken';
+import { ENUM_LIVE_SESSION } from '../liveSession/liveSession.enum';
+import LiveSession from '../liveSession/liveSession.model';
 import Notification from '../notification/notification.model';
 import { Station } from '../station/station.model';
 import { USER_ROLE } from '../user/user.constant';
@@ -256,10 +258,16 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
         status: ENUM_LIVE_STREAM_STATUS.ended,
     });
 
+    const isActive = await LiveSession.findOne({
+        streamRoom: room._id,
+        status: ENUM_LIVE_SESSION.ACTIVE,
+    });
+
     return {
         ...room.toObject(),
         room_id: newRoomData.id,
         roomCodes: freshRoomCodes,
+        isActive: !!isActive,
     };
 };
 const LiveStreamingServices = {
