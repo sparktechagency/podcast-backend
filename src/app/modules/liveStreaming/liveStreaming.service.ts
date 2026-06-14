@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undef */
 import httpStatus from 'http-status';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import config from '../../config';
 import { HMS_ENDPOINT } from '../../constant';
@@ -9,6 +9,7 @@ import AppError from '../../error/appError';
 import { ENUM_NOTIFICATION_TYPE } from '../../utilities/enum';
 import { getMgmToken } from '../../utilities/getMgmToken';
 import Notification from '../notification/notification.model';
+import { USER_ROLE } from '../user/user.constant';
 import { ENUM_LIVE_STREAM_STATUS } from './liveStreaming.enum';
 import {
     createRoomCodesForAllRoles,
@@ -16,10 +17,10 @@ import {
 } from './liveStreaming.helpers';
 import { StreamRoom } from './liveStreaming.model';
 
-const createStreamingRoom = async (profileId: string) => {
+const createStreamingRoom = async (userData: JwtPayload) => {
     console.log('console from live stream');
     const liveRoom = await StreamRoom.findOne({
-        host: profileId,
+        host: userData.profileId,
     });
 
     if (liveRoom) {
@@ -39,16 +40,26 @@ const createStreamingRoom = async (profileId: string) => {
         }),
     });
     const roomData = await response.json();
-
     const roomCodes = await createRoomCodesForAllRoles(roomData.id);
-    await StreamRoom.create({
-        host: profileId,
-        name,
-        template_id: config.hms.template_id,
-        room_id: roomData.id,
-        status: ENUM_LIVE_STREAM_STATUS.live,
-        roomCodes,
-    });
+    if (userData.role == USER_ROLE.creator) {
+        await StreamRoom.create({
+            creator: userData.profileId,
+            name,
+            template_id: config.hms.template_id,
+            room_id: roomData.id,
+            status: ENUM_LIVE_STREAM_STATUS.live,
+            roomCodes,
+        });
+    } else {
+        await StreamRoom.create({
+            station: userData.profileId,
+            name,
+            template_id: config.hms.template_id,
+            room_id: roomData.id,
+            status: ENUM_LIVE_STREAM_STATUS.live,
+            roomCodes,
+        });
+    }
 
     return { roomData, roomCodes };
 };
