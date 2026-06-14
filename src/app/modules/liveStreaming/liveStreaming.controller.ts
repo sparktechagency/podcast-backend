@@ -4,9 +4,7 @@ import sendResponse from '../../utilities/sendResponse';
 import liveStreamingServices from './liveStreaming.service';
 
 const createStreamingRoom = catchAsync(async (req, res) => {
-    const result = await liveStreamingServices.createStreamingRoom(
-        req.user.profileId
-    );
+    const result = await liveStreamingServices.createStreamingRoom(req.user);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
