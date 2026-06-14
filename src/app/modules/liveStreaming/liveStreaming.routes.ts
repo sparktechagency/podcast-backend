@@ -19,7 +19,7 @@ router.post(
 );
 router.get(
     '/get-my-live-room',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.admin, USER_ROLE.superAdmin),
     liveStreamingController.getMyLiveRoom
 );
 // router.post(

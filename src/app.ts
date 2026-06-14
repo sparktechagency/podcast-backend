@@ -70,8 +70,8 @@ app.post('/webhooks/100ms', async (req, res) => {
         event.type + ' ==========>',
         event.data
     );
-    const data = event.data;
-    await LiveSessionServices.endSession(data.session_id);
+    // const data = event.data;
+    // await LiveSessionServices.endSession(data.session_id);
 
     if (event.type === 'session.open.success') {
         const data = event.data;

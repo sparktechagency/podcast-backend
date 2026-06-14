@@ -29,7 +29,7 @@ router.get(
 );
 router.get(
     '/get-my-previous-live',
-    auth(USER_ROLE.creator),
+    auth(USER_ROLE.creator, USER_ROLE.admin, USER_ROLE.superAdmin),
     liveSessionController.getMyLivesessions
 );
 router.patch(

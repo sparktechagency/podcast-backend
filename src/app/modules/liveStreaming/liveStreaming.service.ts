@@ -128,66 +128,6 @@ const endLiveAndStoreRecordings = async (roomId: string) => {
     const room = await StreamRoom.findOne({ room_id: roomId });
     if (!room) throw new AppError(httpStatus.NOT_FOUND, 'Room not found');
 
-    // const allRecording = await fetch(
-    //     `${HMS_ENDPOINT}/v2/recordings?room_id=${roomId}`,
-    //     {
-    //         method: 'GET',
-    //         headers: {
-    //             Authorization: `Bearer ${getMgmToken()}`,
-    //         },
-    //     }
-    // );
-
-    // const allRecordings = await allRecording.json();
-    // console.log('all recordings', allRecordings);
-
-    // 1. Fetch sessions for this room
-    // const sessionRes = await fetch(
-    //     `${HMS_ENDPOINT}/sessions?room_id=${roomId}`,
-    //     {
-    //         method: 'GET',
-    //         headers: {
-    //             Authorization: `Bearer ${await getMgmToken()}`,
-    //         },
-    //     }
-    // );
-    // const sessionData = await sessionRes.json();
-    // console.log('sessionRes', sessionData);
-    // console.log('reocododd', sessionData.data[0].recording);
-    // console.log('reocododd', sessionData.data[1].recording);
-    // console.log('reocododd', sessionData.data[2].recording);
-
-    // for (const session of sessionData.data) {
-    //     const sessionId = session.id;
-    //     console.log('session id', sessionId);
-    //     // 2. Fetch recordings for this session
-    //     const recordingRes = await fetch(
-    //         `${HMS_ENDPOINT}/recordings?session_id=${sessionId}`,
-    //         {
-    //             method: 'GET',
-    //             headers: {
-    //                 Authorization: `Bearer ${getMgmToken()}`,
-    //             },
-    //         }
-    //     );
-    //     const recordingData = await recordingRes.json();
-    //     console.log('recroding', recordingData);
-    //     // 3. Store recordings in DB
-    //     // const recordings = recordingData.data.map((r: any) => ({
-    //     //     session_id: sessionId,
-    //     //     started_at: session.started_at,
-    //     //     ended_at: session.ended_at,
-    //     //     duration: session.duration,
-    //     //     url: r.url, // actual downloadable recording URL
-    //     // }));
-
-    //     // room.recordings.push(...recordings);
-    // }
-
-    // room.status = ENUM_LIVE_STREAM_STATUS.ended;
-    // room.endTime = new Date();
-    // await room.save();
-
     const sessionRes = await fetch(
         `${HMS_ENDPOINT}/recordings?room_id=${roomId}`,
         {
