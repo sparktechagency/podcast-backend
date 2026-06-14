@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
+import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import AppError from '../../error/appError';
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
 import redis from '../../utilities/redisClient';
 import { StreamRoom } from '../liveStreaming/liveStreaming.model';
+import { Station } from '../station/station.model';
+import { USER_ROLE } from '../user/user.constant';
 import { ENUM_LIVE_SESSION } from './liveSession.enum';
 import { ILiveSession } from './liveSession.interface';
 import LiveSession from './liveSession.model';
@@ -187,18 +190,36 @@ const getAllLiveSessions = async (query: Record<string, unknown>) => {
     };
 };
 const getMyLivesessions = async (
-    profileId: string,
+    userData: JwtPayload,
     query: Record<string, unknown>
 ) => {
     const page = parseInt(query.page as string) || 1;
     const limit = parseInt(query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    let stationId: any = null;
+    if (userData.role == USER_ROLE.superAdmin) {
+        const station = await Station.findOne();
+        stationId = station?._id;
+    }
+
     const aggResult = await LiveSession.aggregate([
         {
             $match: {
                 status: ENUM_LIVE_SESSION.ENDED,
-                creator: new mongoose.Types.ObjectId(profileId),
+                $or: [
+                    {
+                        creator: new mongoose.Types.ObjectId(
+                            userData.profileId
+                        ),
+                        station: null,
+                    },
+                    {
+                        station: new mongoose.Types.ObjectId(
+                            stationId as string
+                        ),
+                    },
+                ],
                 recording_presigned_url: { $exists: true, $nin: [null, ''] },
             },
         },
@@ -257,21 +278,38 @@ const getMyLivesessions = async (
 };
 
 // private , public
-const togglePublicPrivate = async (profileId: string, id: string) => {
-    const liveSession = await LiveSession.findOne({
-        creator: profileId,
-        _id: id,
-    });
-    if (!liveSession) {
-        throw new AppError(httpStatus.NOT_FOUND, 'Live session not found');
-    }
+const togglePublicPrivate = async (userData: JwtPayload, id: string) => {
+    if (userData.role == USER_ROLE.creator) {
+        const liveSession = await LiveSession.findOne({
+            creator: userData.profileId,
+            _id: id,
+        });
+        if (!liveSession) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Live session not found');
+        }
 
-    const result = await LiveSession.findByIdAndUpdate(
-        id,
-        { isPublic: !liveSession.isPublic },
-        { new: true, runValidators: true }
-    );
-    return result;
+        const result = await LiveSession.findByIdAndUpdate(
+            id,
+            { isPublic: !liveSession.isPublic },
+            { new: true, runValidators: true }
+        );
+        return result;
+    } else {
+        const liveSession = await LiveSession.findOne({
+            creator: null,
+            _id: id,
+        });
+        if (!liveSession) {
+            throw new AppError(httpStatus.NOT_FOUND, 'Live session not found');
+        }
+
+        const result = await LiveSession.findByIdAndUpdate(
+            id,
+            { isPublic: !liveSession.isPublic },
+            { new: true, runValidators: true }
+        );
+        return result;
+    }
 };
 
 const deleteLive = async (profileId: string, id: string) => {

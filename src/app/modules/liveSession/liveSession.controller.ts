@@ -40,7 +40,7 @@ const getAllLiveSessions = catchAsync(async (req, res) => {
 });
 const getMyLivesessions = catchAsync(async (req, res) => {
     const result = await LiveSessionServices.getMyLivesessions(
-        req.user.profileId,
+        req.user,
         req.query
     );
 
