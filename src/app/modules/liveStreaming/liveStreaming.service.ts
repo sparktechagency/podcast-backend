@@ -220,11 +220,20 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
 
     //  Room is active, return codes
     if (codeData.data && codeData.data.length > 0) {
-        console.log('activecodes', codeData.data);
         const activeCodes = codeData.data.filter(
             (c: any) => c.enabled === true
         );
-        return { ...room.toObject(), roomCodes: activeCodes };
+        const isActive = await LiveSession.findOne({
+            streamRoom: room._id,
+            status: ENUM_LIVE_SESSION.ACTIVE,
+        });
+
+        console.log('isActive session============================>', isActive);
+        return {
+            ...room.toObject(),
+            roomCodes: activeCodes,
+            isActive: !!isActive,
+        };
     }
 
     // Room is dead on 100ms (403 room not active)
@@ -262,6 +271,8 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
         streamRoom: room._id,
         status: ENUM_LIVE_SESSION.ACTIVE,
     });
+
+    console.log('isActive session============================>', isActive);
 
     return {
         ...room.toObject(),
