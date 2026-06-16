@@ -1,10 +1,10 @@
 import httpStatus from 'http-status';
-import AppError from '../../error/appError';
 import QueryBuilder from '../../builder/QueryBuilder';
+import AppError from '../../error/appError';
 
 import { deleteFileFromS3 } from '../../helper/deleteFromS3';
-import PodcastPlaylist from './playlist.model';
 import { IPodcastPlaylist } from './playlist.interface';
+import PodcastPlaylist from './playlist.model';
 
 // Create Playlist
 const createPlaylist = async (userId: string, payload: IPodcastPlaylist) => {
@@ -52,15 +52,7 @@ const getMyPlaylists = async (
     return { meta, result };
 };
 
-// const getPlaylistById = async (playlistId: string) => {
-//     const playlist = await PodcastPlaylist.findById(playlistId)
-//         .populate('user', 'name profile_image')
-//         .populate('podcasts');
-//     if (!playlist) {
-//         throw new AppError(httpStatus.NOT_FOUND, 'Podcast playlist not found');
-//     }
-//     return playlist;
-// };
+
 
 const getPlaylistById = async (playlistId: string) => {
     const playlist = await PodcastPlaylist.findById(playlistId)

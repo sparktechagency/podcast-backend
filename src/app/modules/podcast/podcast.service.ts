@@ -162,23 +162,23 @@ const getAllPodcasts = async (
                 ...matchStage,
                 ...(searchTerm
                     ? {
-                          $or: [
-                              { title: { $regex: searchTerm, $options: 'i' } },
-                              {
-                                  description: {
-                                      $regex: searchTerm,
-                                      $options: 'i',
-                                  },
-                              },
-                              { name: { $regex: searchTerm, $options: 'i' } }, // podcast name
-                              {
-                                  'creator.name': {
-                                      $regex: searchTerm,
-                                      $options: 'i',
-                                  },
-                              }, // creator name
-                          ],
-                      }
+                        $or: [
+                            { title: { $regex: searchTerm, $options: 'i' } },
+                            {
+                                description: {
+                                    $regex: searchTerm,
+                                    $options: 'i',
+                                },
+                            },
+                            { name: { $regex: searchTerm, $options: 'i' } }, // podcast name
+                            {
+                                'creator.name': {
+                                    $regex: searchTerm,
+                                    $options: 'i',
+                                },
+                            }, // creator name
+                        ],
+                    }
                     : {}),
             },
         },
@@ -363,20 +363,20 @@ export const getPodcastFeedForUser = async (
     const bookmarkedPodcastIds = cachedBookmarks
         ? new Set(JSON.parse(cachedBookmarks))
         : new Set(
-              (
-                  await Bookmark.find({ user: userId }).select('podcast').lean()
-              ).map((b) => b.podcast.toString())
-          );
+            (
+                await Bookmark.find({ user: userId }).select('podcast').lean()
+            ).map((b) => b.podcast.toString())
+        );
 
     const likedPodcastIds = cachedLikes
         ? new Set(JSON.parse(cachedLikes))
         : new Set(
-              (
-                  await Podcast.find({ 'likers.user': userId })
-                      .select('_id')
-                      .lean()
-              ).map((l) => l._id.toString())
-          );
+            (
+                await Podcast.find({ 'likers.user': userId })
+                    .select('_id')
+                    .lean()
+            ).map((l) => l._id.toString())
+        );
 
     // Update Redis if empty
     if (!cachedBookmarks) {
@@ -516,11 +516,11 @@ export const getPodcastFeedForUser = async (
     // Step 4: Prepend first podcast if first page
     const podcasts = !lastId
         ? [
-              firstPodcast,
-              ...podcastsAgg.filter(
-                  (p) => p._id.toString() !== firstPodcast._id.toString()
-              ),
-          ]
+            firstPodcast,
+            ...podcastsAgg.filter(
+                (p) => p._id.toString() !== firstPodcast._id.toString()
+            ),
+        ]
         : podcastsAgg;
 
     // Step 5: Add flags
@@ -658,68 +658,7 @@ const getHomeData = async () => {
             .limit(10)
             .lean(),
         Album.find().sort({ updatedAt: -1 }).limit(10).lean(),
-        // Podcast.aggregate([
-        //     {
-        //         $group: {
-        //             _id: '$creator',
-        //             totalViews: { $sum: '$totalView' },
-        //         },
-        //     },
-        //     { $sort: { totalViews: -1 } },
-        //     { $limit: 10 },
-        //     {
-        //         $lookup: {
-        //             from: 'creators',
-        //             localField: '_id',
-        //             foreignField: '_id',
-        //             as: 'creatorInfo',
-        //         },
-        //     },
-        //     { $unwind: '$creatorInfo' },
-        //     {
-        //         $lookup: {
-        //             from: 'podcasts',
-        //             localField: '_id',
-        //             foreignField: 'creator',
-        //             as: 'creatorPodcasts',
-        //         },
-        //     },
-        //     {
-        //         $addFields: {
-        //             latestPodcast: {
-        //                 $arrayElemAt: [
-        //                     {
-        //                         $sortArray: {
-        //                             input: '$creatorPodcasts',
-        //                             sortBy: { createdAt: -1 },
-        //                         },
-        //                     }, // Sort podcasts by createdAt descending
-        //                     0, // Take the first element (most recent podcast)
-        //                 ],
-        //             },
-        //         },
-        //     },
-        //     {
-        //         $project: {
-        //             _id: 0,
-        //             creatorId: '$_id',
-        //             totalViews: 1,
-        //             name: '$creatorInfo.name',
-        //             email: '$creatorInfo.email',
-        //             profile_image: '$creatorInfo.profile_image',
-        //             profile_cover: '$creatorInfo.profile_cover',
-        //             phone: '$creatorInfo.phone',
-        //             location: '$creatorInfo.location',
-        //             donationLink: '$creatorInfo.donationLink',
-        //             randomPodcast: {
-        //                 title: '$randomPodcast.title',
-        //                 description: '$randomPodcast.description',
-        //                 podcast_url: '$randomPodcast.podcast_url',
-        //                 coverImage: '$randomPodcast.coverImage',
-        //             },
-        //         },
-        //     },
-        // ]),
+
 
         Creator.aggregate([
             // Lookup active live session
@@ -1114,14 +1053,12 @@ const searchWithKeyword = async ({
         },
     });
 
-    // 🔥 SORT LOGIC (important)
     pipeline.push({
         $sort: hasLocation
             ? { distance: 1, createdAt: -1 } // nearest first
             : { score: -1, createdAt: -1 }, // relevance first
     });
 
-    // 🔥 PAGINATION
     pipeline.push({
         $facet: {
             data: [{ $skip: skip }, { $limit: Number(limit) }],

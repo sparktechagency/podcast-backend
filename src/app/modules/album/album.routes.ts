@@ -69,7 +69,6 @@ router.post(
     AlbumController.addPodcastToAlbum
 );
 
-/* Remove a podcast from an album */
 router.delete(
     '/remove-podcast/:albumId/:podcastId',
     auth(USER_ROLE.superAdmin, USER_ROLE.admin),
