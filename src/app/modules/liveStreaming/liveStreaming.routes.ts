@@ -22,11 +22,7 @@ router.get(
     auth(USER_ROLE.creator, USER_ROLE.admin, USER_ROLE.superAdmin),
     liveStreamingController.getMyLiveRoom
 );
-// router.post(
-//     '/start-recording/:id',
-//     auth(USER_ROLE.creator),
-//     liveStreamingController.startRecording
-// );
+
 router.post(
     '/invite-user',
     auth(USER_ROLE.creator),
@@ -35,7 +31,6 @@ router.post(
 );
 router.post(
     '/end-live/:id',
-    // auth(USER_ROLE.creator),
     liveStreamingController.endLiveAndStoreRecordings
 );
 

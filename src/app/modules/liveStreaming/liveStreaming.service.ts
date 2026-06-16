@@ -21,7 +21,6 @@ import {
 import { StreamRoom } from './liveStreaming.model';
 
 const createStreamingRoom = async (userData: JwtPayload) => {
-    console.log('console from live stream');
     const liveRoom = await StreamRoom.findOne({
         host: userData.profileId,
     });
@@ -55,7 +54,6 @@ const createStreamingRoom = async (userData: JwtPayload) => {
         });
     } else {
         const station = await Station.findOne();
-        console.log('station data=========================>', station);
         await StreamRoom.create({
             station: station?._id,
             name,
