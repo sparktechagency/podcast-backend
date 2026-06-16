@@ -19,10 +19,7 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
         room_id: payload.room_id,
     });
 
-    console.log(
-        'streamRoom found:====================================================>>>>>>>>>>>>>>>',
-        streamRoom
-    );
+
 
     if (!streamRoom) {
         console.log('Room not found');
@@ -32,11 +29,9 @@ const createLiveSession = async (payload: Partial<ILiveSession>) => {
     payload.streamRoom = streamRoom._id;
     payload.creator = streamRoom?.creator || null;
     payload.station = streamRoom?.station || null;
-    console.log('Creating session...');
 
     const session = await LiveSession.create(payload);
 
-    console.log('Session created:', session._id);
 
     await redis.del('home:data');
 };
