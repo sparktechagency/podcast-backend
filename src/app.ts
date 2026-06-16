@@ -49,6 +49,7 @@ app.use(
             'http://192.168.0.16:3004',
             'http://10.10.20.60:3003',
             'https://admin.preachradio.com',
+            "http://10.10.28.176:3000"
         ],
         credentials: true,
     })

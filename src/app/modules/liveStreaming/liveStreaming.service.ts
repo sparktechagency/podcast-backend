@@ -147,52 +147,6 @@ const endLiveAndStoreRecordings = async (roomId: string) => {
     return null;
 };
 
-// const getMyLiveRoom = async (profileId: string) => {
-//     const room = await StreamRoom.findOne({
-//         status: ENUM_LIVE_STREAM_STATUS.live,
-//         host: profileId,
-//     });
-//     console.log('room data', room);
-//     if (!room) {
-//         return null;
-//     }
-//     return room;
-// };
-
-// const getMyLiveRoom = async (profileId: string) => {
-//     const room = await StreamRoom.findOne({ host: profileId });
-//     console.log('Room----------------------------------->>>>', room);
-//     if (!room) return null;
-
-//     // Check if existing codes are still active
-//     const codeCheckRes = await fetch(
-//         `${HMS_ENDPOINT}/room-codes/room/${room.room_id}`,
-//         {
-//             method: 'GET',
-//             headers: {
-//                 Authorization: `Bearer ${getMgmToken()}`,
-//             },
-//         }
-//     );
-//     const codeData = await codeCheckRes.json();
-//     console.log('Code json=============================>', codeData);
-//     const activeCodes = codeData.data?.filter((c: any) => c.enabled === true);
-
-//     if (activeCodes && activeCodes.length > 0) {
-//         console.log('in site active codes', activeCodes);
-//         // ✅ Codes still valid, return as-is
-//         return { ...room.toObject(), roomCodes: activeCodes };
-//     }
-
-//     console.log('nice to meet you ');
-//     // ♻️ Codes expired or disabled, regenerate
-//     const freshRoomCodes = await createRoomCodesForAllRoles(room.room_id);
-//     console.log('freesh room code', freshRoomCodes);
-//     await StreamRoom.findByIdAndUpdate(room._id, { roomCodes: freshRoomCodes });
-
-//     return { ...room.toObject(), roomCodes: freshRoomCodes };
-// };
-
 const getMyLiveRoom = async (userData: JwtPayload) => {
     let room: any;
     if (userData.role === USER_ROLE.creator) {
@@ -228,7 +182,6 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
             status: ENUM_LIVE_SESSION.ACTIVE,
         });
 
-        console.log('isActive session============================>', isActive);
         return {
             ...room.toObject(),
             roomCodes: activeCodes,
@@ -236,9 +189,7 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
         };
     }
 
-    // Room is dead on 100ms (403 room not active)
-    // Create a completely new room on 100ms
-    console.log('Room is dead, creating new room on 100ms...');
+
 
     const name = generateRoomName();
     const newRoomRes = await fetch(`${HMS_ENDPOINT}/rooms`, {
@@ -253,11 +204,9 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
         }),
     });
     const newRoomData = await newRoomRes.json();
-    console.log('New room created:', newRoomData);
 
     // Generate codes for new room
     const freshRoomCodes = await createRoomCodesForAllRoles(newRoomData.id);
-    console.log('Fresh room codes:', freshRoomCodes);
 
     // Update DB with new room details
     await StreamRoom.findByIdAndUpdate(room._id, {
@@ -272,7 +221,6 @@ const getMyLiveRoom = async (userData: JwtPayload) => {
         status: ENUM_LIVE_SESSION.ACTIVE,
     });
 
-    console.log('isActive session============================>', isActive);
 
     return {
         ...room.toObject(),
@@ -287,6 +235,5 @@ const LiveStreamingServices = {
     inviteUser,
     endLiveAndStoreRecordings,
     getMyLiveRoom,
-    // startRecording,
 };
 export default LiveStreamingServices;
