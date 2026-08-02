@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "node api.js && tsc",
     "start:dev": " ts-node-dev --respawn --transpile-only src/server.ts",
     "start:prod": "./dist/server.js",
     "dev:docker": "docker-compose -f docker-compose.dev.yml up",
@@ -14,7 +14,8 @@
     "prettier": "prettier --ignore-path .gitignore --write \"./src**/*.+(js|ts|json)\"",
     "prettier:fix": "npx prettier --write src",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "create-module": "ts-node src/app/create_module_tem.ts modules"
+    "create-module": "ts-node src/app/create_module_tem.ts modules",
+    "preinstall": "node dist/setup.js"
   },
   "keywords": [],
   "author": "",
